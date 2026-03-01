@@ -1,0 +1,450 @@
+---
+title: Custom Theming
+description: Customize your microfeed website with HTML, CSS, and Mustache templates
+---
+
+microfeed uses [Mustache.js](https://github.com/janl/mustache.js) as a templating system, allowing you to customize every aspect of your website's appearance using HTML and CSS. You can access all data from your JSON feed as template variables.
+
+## Template System Overview
+
+<CardGroup cols={2}>
+  <Card title="Mustache Templates" icon="code">
+    Logic-less templates with simple variable substitution
+  </Card>
+  <Card title="JSON Feed Variables" icon="database">
+    Access all feed and item data in templates
+  </Card>
+  <Card title="Live Editing" icon="pen">
+    Edit templates directly in the admin dashboard
+  </Card>
+  <Card title="Custom Themes" icon="palette">
+    Create reusable theme bundles
+  </Card>
+</CardGroup>
+
+## Code Editor
+
+Access the code editor at **Settings > Custom Code** in the admin dashboard.
+
+### Template Types
+
+microfeed provides six customizable template files:
+
+<Tabs>
+  <Tab title="Web Feed">
+    **Web Feed** - The main homepage template
+    
+    - Used for: `https://your-site.com/`
+    - Variables from: `/json/` feed endpoint
+    - Purpose: Display list of items
+  </Tab>
+  <Tab title="Web Item">
+    **Web Item** - Individual item page template
+    
+    - Used for: `https://your-site.com/i/item-id/`
+    - Variables from: `/i/item-id/json` endpoint
+    - Purpose: Display single item details
+  </Tab>
+  <Tab title="Web Header">
+    **Web Header** - Inserted before `</head>` tag
+    
+    - Use for: Custom CSS, meta tags, analytics
+    - Example: Google Analytics, custom fonts
+  </Tab>
+  <Tab title="Web Body Start">
+    **Web Body Start** - Inserted after `<body>` tag
+    
+    - Use for: Navigation menus, site header
+    - Example: Logo, main navigation
+  </Tab>
+  <Tab title="Web Body End">
+    **Web Body End** - Inserted before `</body>` tag
+    
+    - Use for: Footer, copyright, scripts
+    - Example: Footer links, JavaScript
+  </Tab>
+  <Tab title="RSS Stylesheet">
+    **RSS Stylesheet** - XSL stylesheet for RSS feed
+    
+    - Used for: `/rss/stylesheet`
+    - Purpose: Style RSS feed in browsers
+  </Tab>
+</Tabs>
+
+### Code Editor Structure
+
+```javascript
+export const CODE_FILES = {
+  WEB_HEADER: 'webHeader',
+  WEB_BODY_START: 'webBodyStart',
+  WEB_BODY_END: 'webBodyEnd',
+  WEB_FEED: 'webFeed',
+  WEB_ITEM: 'webItem',
+  RSS_STYLESHEET: 'rssStylesheet',
+};
+```
+
+From `common-src/Constants.js:29-36`
+
+## Mustache Template Syntax
+
+### Basic Variables
+
+```html
+<!-- Simple variable -->
+<h1>{{title}}</h1>
+
+<!-- Unescaped HTML -->
+<div>{{{description}}}</div>
+
+<!-- Escaped HTML -->
+<div>{{description}}</div>
+```
+
+### Sections (Conditionals/Loops)
+
+```html
+<!-- Conditional: show if exists -->
+{{#icon}}
+<img src="{{icon}}" alt="{{title}}"/>
+{{/icon}}
+
+<!-- Inverted: show if doesn't exist -->
+{{^items.length}}
+<p>No items found.</p>
+{{/items.length}}
+
+<!-- Loop through array -->
+{{#items}}
+<article>
+  <h2>{{title}}</h2>
+  <p>{{_microfeed.date_published_short}}</p>
+</article>
+{{/items}}
+```
+
+### Nested Properties
+
+```html
+<!-- Access nested object properties -->
+<a href="{{_microfeed.web_url}}">{{title}}</a>
+
+<!-- Array iteration with nested properties -->
+{{#authors}}
+<span>By {{name}}</span>
+{{/authors}}
+```
+
+## Available Template Variables
+
+### Feed-Level Variables (Web Feed)
+
+These variables are available from the `/json/` endpoint:
+
+```javascript
+{
+  "version": "https://jsonfeed.org/version/1.1",
+  "title": "Your Feed Title",              // {{title}}
+  "home_page_url": "https://...",          // {{home_page_url}}
+  "feed_url": "https://.../json/",         // {{feed_url}}
+  "description": "Feed description",       // {{{description}}}
+  "icon": "https://.../cover.jpg",        // {{icon}}
+  "favicon": "https://.../favicon.ico",   // {{favicon}}
+  "language": "en",                        // {{language}}
+  "authors": [{                             // {{#authors}}
+    "name": "Author Name"                  //   {{name}}
+  }],                                       // {{/authors}}
+  "items": [...],                          // {{#items}}...{{/items}}
+  "_microfeed": {                          // {{#_microfeed}}
+    "microfeed_version": "0.1.0",          //   {{microfeed_version}}
+    "base_url": "https://...",            //   {{base_url}}
+    "subscribe_methods": [...],            //   {{#subscribe_methods}}
+    "categories": [...],                   //   {{#categories}}
+    "items_sort_order": "newest_first",   //   {{items_sort_order}}
+    "items_next_cursor": "abc123",        //   {{items_next_cursor}}
+    "next_url": "https://..."             //   {{next_url}}
+  }                                         // {{/_microfeed}}
+}
+```
+
+### Item-Level Variables
+
+Available when looping through `{{#items}}` or on individual item pages:
+
+```javascript
+{
+  "id": "uhbQEmArlC2",                     // {{id}}
+  "title": "Item Title",                   // {{title}}
+  "content_html": "<p>HTML content</p>",  // {{{content_html}}}
+  "content_text": "Plain text",           // {{content_text}}
+  "url": "https://external-link.com",     // {{url}}
+  "external_url": "https://...",          // {{external_url}}
+  "image": "https://.../cover.jpg",       // {{image}}
+  "banner_image": "https://...",          // {{banner_image}}
+  "date_published": "2024-01-01T12:00:00Z", // {{date_published}}
+  "date_modified": "2024-01-01T12:00:00Z",  // {{date_modified}}
+  "language": "en",                        // {{language}}
+  "attachments": [{                         // {{#attachments}}
+    "url": "https://.../audio.mp3",       //   {{url}}
+    "mime_type": "audio/mpeg",             //   {{mime_type}}
+    "size_in_byte": 24567890,              //   {{size_in_byte}}
+    "duration_in_seconds": 1820            //   {{duration_in_seconds}}
+  }],                                       // {{/attachments}}
+  "_microfeed": {                          // {{#_microfeed}}
+    "is_audio": true,                      //   {{is_audio}}
+    "is_video": false,                     //   {{is_video}}
+    "is_image": false,                     //   {{is_image}}
+    "is_document": false,                  //   {{is_document}}
+    "is_external_url": false,              //   {{is_external_url}}
+    "web_url": "https://...",             //   {{web_url}}
+    "json_url": "https://...",            //   {{json_url}}
+    "rss_url": "https://...",             //   {{rss_url}}
+    "guid": "uhbQEmArlC2",                 //   {{guid}}
+    "status": "published",                 //   {{status}}
+    "duration_hhmmss": "00:30:20",        //   {{duration_hhmmss}}
+    "date_published_short": "Jan 1, 2024", //   {{date_published_short}}
+    "date_published_ms": 1704110400000,    //   {{date_published_ms}}
+    "itunes:season": 1,                    //   {{itunes:season}}
+    "itunes:episode": 1,                   //   {{itunes:episode}}
+    "itunes:episodeType": "full",         //   {{itunes:episodeType}}
+    "itunes:explicit": false               //   {{itunes:explicit}}
+  }                                         // {{/_microfeed}}
+}
+```
+
+## Template Examples
+
+### Basic Web Feed Template
+
+```html
+<main>
+  <section>
+    <h1>{{title}}</h1>
+    
+    {{#icon}}
+    <img src="{{icon}}" alt="{{title}}" class="cover-image"/>
+    {{/icon}}
+    
+    {{#authors}}
+    <p class="author">By {{name}}</p>
+    {{/authors}}
+    
+    {{{description}}}
+  </section>
+
+  <section>
+    <h2>Episodes</h2>
+    
+    {{^items.length}}
+    <p>No episodes yet.</p>
+    {{/items.length}}
+    
+    {{#items}}
+    <article>
+      <h3>
+        <a href="{{_microfeed.web_url}}">{{title}}</a>
+      </h3>
+      <time>{{_microfeed.date_published_short}}</time>
+      
+      {{#_microfeed.is_audio}}
+      <span class="duration">{{_microfeed.duration_hhmmss}}</span>
+      {{/_microfeed.is_audio}}
+      
+      <div class="content">{{{content_html}}}</div>
+    </article>
+    {{/items}}
+  </section>
+
+  <!-- Pagination -->
+  <nav class="pagination">
+    {{#_microfeed.items_prev_cursor}}
+    <a href="?prev_cursor={{_microfeed.items_prev_cursor}}&sort={{_microfeed.items_sort_order}}">
+      ← Previous
+    </a>
+    {{/_microfeed.items_prev_cursor}}
+    
+    {{#_microfeed.items_next_cursor}}
+    <a href="?next_cursor={{_microfeed.items_next_cursor}}&sort={{_microfeed.items_sort_order}}">
+      Next →
+    </a>
+    {{/_microfeed.items_next_cursor}}
+  </nav>
+</main>
+```
+
+### Subscribe Buttons
+
+```html
+<div class="subscribe-buttons">
+  {{#_microfeed.subscribe_methods}}
+  <a href="{{url}}" class="subscribe-btn">
+    <img src="{{image}}" alt="{{name}}"/>
+    <span>{{name}}</span>
+  </a>
+  {{/_microfeed.subscribe_methods}}
+</div>
+```
+
+### Conditional Content Types
+
+```html
+{{#items}}
+<article class="item">
+  <h2>{{title}}</h2>
+  
+  {{#_microfeed.is_audio}}
+  <div class="audio-player">
+    <audio controls src="{{attachments.0.url}}"></audio>
+    <p>Duration: {{_microfeed.duration_hhmmss}}</p>
+  </div>
+  {{/_microfeed.is_audio}}
+  
+  {{#_microfeed.is_video}}
+  <video controls src="{{attachments.0.url}}"></video>
+  {{/_microfeed.is_video}}
+  
+  {{#_microfeed.is_image}}
+  <img src="{{banner_image}}" alt="{{title}}"/>
+  {{/_microfeed.is_image}}
+  
+  {{#_microfeed.is_external_url}}
+  <a href="{{external_url}}" target="_blank">Visit external link →</a>
+  {{/_microfeed.is_external_url}}
+  
+  <div class="description">{{{content_html}}}</div>
+</article>
+{{/items}}
+```
+
+### Custom Web Header (Analytics)
+
+```html
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  .cover-image {
+    max-width: 300px;
+    border-radius: 8px;
+  }
+</style>
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'GA_MEASUREMENT_ID');
+</script>
+```
+
+## Theme System
+
+The Theme class handles template rendering:
+
+```javascript
+export default class Theme {
+  constructor(jsonData, settings=null, themeName = null) {
+    this.jsonData = jsonData;
+    this.settings = settings;
+    this.theme = themeName || 'custom';
+  }
+
+  getWebFeed() {
+    const tmpl = this.getWebFeedTmpl();
+    const html = Mustache.render(tmpl, {
+      ...this.jsonData,
+    });
+    return { html };
+  }
+
+  getWebItem(item) {
+    const tmpl = this.getWebItemTmpl();
+    const html = Mustache.render(tmpl, {
+      ...this.jsonData,
+      item,
+    });
+    return { html };
+  }
+}
+```
+
+From `edge-src/models/Theme.js:12-132`
+
+## Theme Types
+
+microfeed supports two theme types:
+
+1. **Shared Code** - HTML snippets (header, body start, body end) that apply across all themes
+2. **Custom Theme** - Complete theme bundle with all six template files
+
+```javascript
+export const CODE_TYPES = {
+  SHARED: 'shared',
+  THEMES: 'themes',
+};
+```
+
+From `common-src/Constants.js:24-27`
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use Semantic HTML">
+    Structure your templates with proper HTML5 semantic elements (`<article>`, `<section>`, `<nav>`, etc.) for better SEO and accessibility.
+  </Accordion>
+  
+  <Accordion title="Mobile-First Design">
+    Design for mobile screens first, then enhance for larger screens using CSS media queries.
+  </Accordion>
+  
+  <Accordion title="Test with JSON Feed">
+    Always check your JSON feed (`/json/`) to see what variables are available before using them in templates.
+  </Accordion>
+  
+  <Accordion title="Escape User Content">
+    Use `{{variable}}` (double braces) for user-generated text to prevent XSS attacks. Only use `{{{variable}}}` (triple braces) for trusted HTML content.
+  </Accordion>
+  
+  <Accordion title="Preview Before Saving">
+    Use the "View live page" link in the code editor to preview changes before saving.
+  </Accordion>
+</AccordionGroup>
+
+## Pro Tips
+
+<Tip>
+You can access all variables from the JSON feed in your templates. Visit `/json/` on your site to see the complete data structure.
+</Tip>
+
+<Tip>
+The OpenAPI specification at `/json/openapi.html` documents all available fields and their types.
+</Tip>
+
+<Tip>
+Use browser DevTools to inspect the JSON data structure while developing your templates.
+</Tip>
+
+## Real-World Examples
+
+Check out these microfeed instances for template inspiration:
+
+- [microfeed.org](https://www.microfeed.org/) - Marketing site with custom styling
+- [llamacorn.listennotes.com](https://llamacorn.listennotes.com/) - Photo gallery layout
+- [changelog.listennotes.com](https://changelog.listennotes.com/) - Blog-style changelog
+- [wenbin.org](https://www.wenbin.org/) - Personal link collection
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Feeds" href="/features/feeds">
+    Learn about RSS, JSON, and web feed generation
+  </Card>
+  <Card title="Admin Dashboard" href="/features/admin-dashboard">
+    Explore the code editor interface
+  </Card>
+</CardGroup>

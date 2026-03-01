@@ -1,0 +1,312 @@
+---
+title: Local Development
+description: Set up and run microfeed locally for development and testing
+---
+
+You can run microfeed locally for development, testing, or customization. This guide walks you through the setup process.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js** (v22.0.0 or later recommended)
+- **npm** (comes with Node.js)
+- **yarn** (v4.9.2 or later recommended)
+- **wrangler** (Cloudflare's CLI tool)
+
+### Install Wrangler
+
+If you don't have Wrangler installed:
+
+```bash
+npm install -g wrangler
+```
+
+Verify the installation:
+
+```bash
+wrangler --version
+```
+
+## Setup Steps
+
+### 1. Clone the Repository
+
+Clone your forked microfeed repository:
+
+```bash
+git clone https://github.com/your-username/microfeed.git
+cd microfeed
+```
+
+### 2. Create Configuration File
+
+Create a `.vars.toml` file in the root directory (same level as `README.md`). This file stores your local development secrets.
+
+```bash
+touch .vars.toml
+```
+
+Add the following configuration to `.vars.toml`:
+
+```toml
+# .vars.toml
+CLOUDFLARE_PROJECT_NAME = "your-project-org"
+CLOUDFLARE_ACCOUNT_ID = "your-cloudflare-account-id"
+CLOUDFLARE_API_TOKEN = "your-api-token"
+R2_ACCESS_KEY_ID = "your-r2-access-key"
+R2_SECRET_ACCESS_KEY = "your-r2-secret-key"
+
+R2_PUBLIC_BUCKET = "your-r2-bucket-name"
+```
+
+### 3. Get Your Cloudflare Credentials
+
+You'll need the same credentials used in the GitHub Actions setup:
+
+**CLOUDFLARE_ACCOUNT_ID**  
+Find this in your Cloudflare dashboard URL:  
+`https://dash.cloudflare.com/[your-account-id]`
+
+**CLOUDFLARE_API_TOKEN**  
+Create a token at [dash.cloudflare.com/profile/api-tokens](https://dash.cloudflare.com/profile/api-tokens) with:
+- Cloudflare Pages (Edit)
+- D1 (Edit)
+
+**R2_ACCESS_KEY_ID** and **R2_SECRET_ACCESS_KEY**  
+Create R2 API credentials at your [R2 dashboard](https://dash.cloudflare.com/sign-up/r2) with "Admin Read & Write" permissions.
+
+**R2_PUBLIC_BUCKET**  
+The name of your R2 bucket (create one in the R2 dashboard if needed).
+
+### 4. Install Dependencies
+
+```bash
+yarn install
+```
+
+This installs all required packages defined in `package.json`.
+
+### 5. Start Development Server
+
+```bash
+yarn dev
+```
+
+You should see output indicating that both the webpack dev server and Wrangler are running.
+
+### 6. Access Local Instance
+
+Open your browser and navigate to:
+
+```
+http://127.0.0.1:8788/
+```
+
+The admin dashboard will be available at:
+
+```
+http://127.0.0.1:8788/admin/
+```
+
+## How `yarn dev` Works
+
+The `yarn dev` command runs two processes concurrently:
+
+### 1. Client-Side Development (`yarn dev:client`)
+
+Starts the webpack DevServer for client-side JavaScript:
+- Compiles React components
+- Enables hot module replacement (HMR)
+- Serves assets at `http://localhost:8080`
+
+### 2. Edge Development (`yarn dev:edge`)
+
+Starts Wrangler to serve the Pages (edge) code:
+- Runs Cloudflare Workers locally
+- Simulates the Pages environment
+- Connects to local D1 database
+- Proxies to the webpack dev server for assets
+
+```bash
+# What runs under the hood
+wrangler pages dev --d1 FEED_DB=id_placeholder --local ./public
+```
+
+## Development Scripts
+
+Here are the key scripts defined in `package.json`:
+
+### yarn dev
+
+Runs the complete local development environment:
+
+```bash
+yarn dev
+```
+
+This is equivalent to:
+
+```bash
+yarn setup:development && \
+concurrently --kill-others-on-fail "yarn dev:edge" "yarn dev:client"
+```
+
+### yarn dev:edge
+
+Runs only the edge (Pages) development server:
+
+```bash
+yarn dev:edge
+```
+
+### yarn dev:client
+
+Runs only the webpack development server:
+
+```bash
+yarn dev:client
+```
+
+### yarn setup:development
+
+Initializes the local development environment:
+
+```bash
+yarn setup:development
+```
+
+This runs:
+- `yarn install` - Installs dependencies
+- `ops/generate_local_vars.js` - Generates local variables
+- `ops/init_feed_db.js` - Initializes the local D1 database
+
+### yarn test
+
+Runs the test suite:
+
+```bash
+yarn test
+```
+
+## Local Database
+
+The local development environment uses a local SQLite database that mimics the D1 structure.
+
+### Location
+
+The local database is created in:
+
+```
+.wrangler/state/v3/d1/miniflare-D1DatabaseObject/
+```
+
+### Initialize Database
+
+If you need to reset or initialize the database:
+
+```bash
+node ops/init_feed_db.js
+```
+
+This runs the SQL schema from `ops/db/init.sql`.
+
+### Query Local Database
+
+You can query the local database using Wrangler:
+
+```bash
+wrangler d1 execute FEED_DB --local --command "SELECT * FROM items;"
+```
+
+## Customizing the Code
+
+### Frontend Changes
+
+Frontend code is located in:
+
+```
+src/client/
+```
+
+Changes are automatically reloaded via webpack HMR.
+
+### Backend Changes
+
+Pages functions (API endpoints) are in:
+
+```
+functions/
+```
+
+Wrangler automatically reloads when you save changes.
+
+### Styling
+
+microfeed uses Tailwind CSS. Configuration is in:
+
+```
+tailwind.config.js
+```
+
+## Building for Production
+
+To build the production bundle locally:
+
+```bash
+yarn build:production
+```
+
+This compiles and optimizes:
+- Client-side JavaScript
+- CSS styles
+- Assets
+
+Output goes to:
+
+```
+public/
+```
+
+## Troubleshooting
+
+### Port Already in Use
+
+If port 8788 is already in use, Wrangler will fail to start. You can:
+
+1. Stop the process using the port
+2. Or modify the port in `wrangler.toml`
+
+### Module Not Found Errors
+
+If you see module errors:
+
+```bash
+rm -rf node_modules
+yarn install
+```
+
+### D1 Database Issues
+
+If the database isn't working:
+
+```bash
+rm -rf .wrangler
+node ops/init_feed_db.js
+yarn dev
+```
+
+### R2 Connection Issues
+
+Ensure your `.vars.toml` has correct R2 credentials and that the bucket exists in your Cloudflare account.
+
+## Next Steps
+
+Once you have local development working:
+
+- Make your code changes
+- Test thoroughly locally
+- Commit to your forked repository
+- Deploy to Cloudflare using GitHub Actions
+
+See the [installation guide](/installation/deploy-to-cloudflare) for deployment instructions.

@@ -1,0 +1,155 @@
+---
+title: System Architecture
+description: Learn how microfeed leverages Cloudflare services to deliver a lightweight, self-hosted CMS
+---
+
+microfeed is built entirely on Cloudflare's infrastructure, using four core services to deliver a serverless, scalable content management system. This architecture eliminates the need to manage servers while providing generous free usage quotas.
+
+## Core Components
+
+### Cloudflare Pages
+
+Pages hosts and runs the microfeed application code. When you deploy microfeed, the entire frontend and serverless functions run on Pages' edge network.
+
+**What it does:**
+- Hosts the static website and admin dashboard
+- Executes serverless functions for API endpoints
+- Provides global CDN distribution
+- Handles SSL/TLS certificates automatically
+
+**Access pattern:**
+- Public feed: `https://${CLOUDFLARE_PROJECT_NAME}.pages.dev/`
+- Admin dashboard: `https://${CLOUDFLARE_PROJECT_NAME}.pages.dev/admin/`
+- RSS feed: `https://${CLOUDFLARE_PROJECT_NAME}.pages.dev/rss/`
+- JSON feed: `https://${CLOUDFLARE_PROJECT_NAME}.pages.dev/json/`
+
+### Cloudflare R2
+
+R2 provides S3-compatible object storage for all media files uploaded to your microfeed instance.
+
+**What it stores:**
+- Audio files (podcasts, music)
+- Video files
+- Images (photos, graphics, thumbnails)
+- Documents (PDFs, files)
+- Any other uploaded media
+
+**Key features:**
+- S3-compatible API for easy integration
+- No egress fees (unlike AWS S3)
+- 10GB free storage per month
+- 10 million free reads per month
+- 1 million free writes per month
+
+### Cloudflare D1
+
+D1 is Cloudflare's serverless SQL database built on SQLite. It stores all metadata for your microfeed instance.
+
+**What it stores:**
+- Channel configuration and settings
+- Item metadata (title, description, publish date)
+- System settings and custom code
+- User preferences and tracking URLs
+
+**Key features:**
+- SQLite-compatible SQL database
+- Serverless with automatic scaling
+- No connection limits
+- Accessible via Wrangler CLI
+
+### Cloudflare Zero Trust
+
+Zero Trust provides secure, passwordless authentication for the admin dashboard.
+
+**What it does:**
+- Protects the `/admin/` route
+- Provides email-based or social login (Google, GitHub, etc.)
+- Eliminates the need for password management
+- Adds an additional security layer
+
+**Configuration:**
+You configure Zero Trust policies in the Cloudflare dashboard to control who can access your admin dashboard. This is set up during the initial installation process.
+
+## Data Flow
+
+### Publishing Content
+
+1. You log in to the admin dashboard via Zero Trust authentication
+2. You create or edit an item with text and media
+3. Media files are uploaded to R2 bucket
+4. Item metadata is saved to D1 database
+5. Pages functions serve the content from D1 and R2
+
+### Viewing Content
+
+1. Visitor requests a page (web, RSS, or JSON)
+2. Pages function queries D1 for item metadata
+3. Pages function generates the response with R2 URLs for media
+4. Content is served via Cloudflare's edge network
+5. Media files are served directly from R2
+
+## Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Cloudflare Edge Network                  │
+│                                                               │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │              Cloudflare Pages                          │  │
+│  │                                                         │  │
+│  │  • Static website                                      │  │
+│  │  • Serverless functions                                │  │
+│  │  • Admin dashboard                                     │  │
+│  └───────────────────────────────────────────────────────┘  │
+│           │                                    │              │
+│           ▼                                    ▼              │
+│  ┌──────────────────┐              ┌──────────────────┐     │
+│  │  Cloudflare D1   │              │  Cloudflare R2   │     │
+│  │                  │              │                  │     │
+│  │  • SQLite DB     │              │  • Media files   │     │
+│  │  • Metadata      │              │  • S3-compatible │     │
+│  │  • Settings      │              │  • No egress fees│     │
+│  └──────────────────┘              └──────────────────┘     │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
+                          ▲
+                          │
+                ┌─────────┴─────────┐
+                │ Zero Trust Access │
+                │   (Admin only)    │
+                └───────────────────┘
+```
+
+## Cost Structure
+
+Cloudflare provides generous free tiers that make microfeed essentially free to run for personal use:
+
+- **Pages**: Unlimited requests on free plan
+- **R2**: 10GB storage + 10M reads + 1M writes per month
+- **D1**: 5GB storage + 5M reads + 100K writes per day
+- **Zero Trust**: 50 users free
+
+You'll only need to pay for:
+- Your custom domain name (annual fee)
+- Usage beyond free tier limits (typically only for high-traffic sites)
+
+## Benefits of This Architecture
+
+**No server management**: Everything runs serverlessly with automatic scaling.
+
+**Global performance**: Content is served from Cloudflare's edge network worldwide.
+
+**Cost-effective**: Free tier covers most personal and small business use cases.
+
+**Secure by default**: Zero Trust authentication, automatic HTTPS, DDoS protection.
+
+**Simple backup**: D1 exports to SQLite, R2 uses S3-compatible API for easy backup.
+
+## Limitations
+
+While this architecture is powerful, there are some constraints:
+
+- **Cloudflare dependency**: You're relying on a single platform
+- **D1 limitations**: SQLite has different constraints than PostgreSQL/MySQL
+- **R2 access**: No native UI for browsing files (use S3-compatible tools)
+- **Edge execution**: Cold starts can occur, though they're typically fast

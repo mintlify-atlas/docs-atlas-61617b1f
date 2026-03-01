@@ -1,0 +1,317 @@
+---
+title: Tracking URLs
+description: Set up media tracking for podcast analytics and download statistics
+---
+
+Tracking URLs allow you to monitor downloads of your audio, video, and media files by routing them through third-party analytics services. This is a standard practice in the podcast industry.
+
+## How Tracking URLs Work
+
+microfeed automatically prepends your configured tracking URLs to media file URLs in your RSS and JSON feeds. When a podcast app or browser requests the media file, the request passes through the tracking service first, allowing it to log the download before redirecting to your actual file.
+
+### URL Transformation
+
+**Your configuration** (Settings > Tracking URLs):
+```
+https://op3.dev/e/
+https://dts.podtrac.com/redirect.mp3/
+```
+
+**Original media URL**:
+```
+https://media-cdn.microfeed.org/audio/episode-001.mp3
+```
+
+**Final URL in your RSS feed**:
+```
+https://op3.dev/e/dts.podtrac.com/redirect.mp3/media-cdn.microfeed.org/audio/episode-001.mp3
+```
+
+<Warning>
+  Order matters! Tracking URLs are prepended in the order you list them. The first URL in your list becomes the outermost prefix.
+</Warning>
+
+## Supported Services
+
+You can use any tracking service that supports prefix-based URL tracking.
+
+### OP3 (Open Podcast Prefix Project)
+
+**URL**: `https://op3.dev/e/`
+
+**Features**:
+- Free and open source
+- Privacy-focused
+- No signup required
+- Real-time stats
+- Public download counts
+
+**Setup**:
+1. Add `https://op3.dev/e/` to your tracking URLs
+2. Update your settings
+3. View stats at `https://op3.dev/show/{your-rss-url}`
+
+<Accordion title="Example OP3 stats URL">
+  If your RSS feed is at:
+  ```
+  https://mypodcast.pages.dev/rss/
+  ```
+  
+  View stats at:
+  ```
+  https://op3.dev/show/https://mypodcast.pages.dev/rss/
+  ```
+</Accordion>
+
+### Podtrac
+
+**URL**: `https://dts.podtrac.com/redirect.mp3/` (for audio)
+
+**Features**:
+- Industry standard analytics
+- Detailed listener demographics
+- Episode performance tracking
+- IAB certified measurement
+
+**Setup**:
+1. Sign up at [analytics.podtrac.com](http://analytics.podtrac.com/)
+2. Add `https://dts.podtrac.com/redirect.mp3/` to tracking URLs
+3. Access dashboard at analytics.podtrac.com
+
+<Accordion title="Podtrac media type prefixes">
+  - Audio: `https://dts.podtrac.com/redirect.mp3/`
+  - Video: `https://dts.podtrac.com/redirect.mp4/`
+  
+  If you have both audio and video, add both URLs to track different media types.
+</Accordion>
+
+### Chartable
+
+**URL**: `https://chtbl.com/track/{TRACKER_ID}/`
+
+**Features**:
+- Owned by Spotify
+- Advanced analytics
+- SmartPromos for cross-promotion
+- Attribution tracking
+
+**Setup**:
+1. Sign up at [chartable.com](https://chartable.com/)
+2. Get your tracker ID from dashboard
+3. Add `https://chtbl.com/track/{TRACKER_ID}/` to tracking URLs
+
+### Blubrry
+
+**URL**: Provided after signup
+
+**Features**:
+- Comprehensive podcast statistics
+- IAB certified
+- Detailed reporting
+
+**Setup**:
+1. Sign up at [blubrry.com](https://www.blubrry.com/)
+2. Generate your tracking URL
+3. Add to your microfeed tracking URLs
+
+### Custom Tracking Services
+
+You can use any service that:
+- Accepts URLs in prefix format
+- Redirects to the original media file
+- Provides download statistics
+
+Simply add the service's prefix URL to your tracking URLs list.
+
+## Configuration Steps
+
+### 1. Access Tracking Settings
+
+Navigate to your admin dashboard:
+```
+https://your-site.pages.dev/admin/settings/
+```
+
+Scroll to the **Tracking URLs** section.
+
+### 2. Add Tracking URLs
+
+Enter one tracking URL per line in the textarea:
+
+```
+https://op3.dev/e/
+https://dts.podtrac.com/redirect.mp3/
+https://chtbl.com/track/ABC123/
+```
+
+### 3. Save Configuration
+
+Click the **Update** button. You'll see a success message when saved.
+
+### 4. Verify in RSS Feed
+
+Check your RSS feed at `/rss/` to confirm tracking URLs are prepended:
+
+```xml
+<enclosure 
+  url="https://op3.dev/e/dts.podtrac.com/redirect.mp3/example.com/audio.mp3"
+  length="15360000"
+  type="audio/mpeg"/>
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use multiple tracking services">
+    Combine services for redundancy and cross-verification:
+    - Use OP3 for real-time public stats
+    - Use Podtrac or Chartable for detailed analytics
+    - Compare numbers between services to verify accuracy
+  </Accordion>
+  
+  <Accordion title="Place OP3 first for transparency">
+    If using OP3, place it first in your list:
+    ```
+    https://op3.dev/e/
+    https://dts.podtrac.com/redirect.mp3/
+    ```
+    This makes OP3's public stats the outermost tracking layer.
+  </Accordion>
+  
+  <Accordion title="Don't use too many prefixes">
+    Each prefix adds:
+    - Extra DNS lookup
+    - Additional HTTP redirect
+    - Slight download delay
+    
+    Limit to 2-3 tracking services to maintain good user experience.
+  </Accordion>
+  
+  <Accordion title="Test with actual podcast apps">
+    After configuring tracking:
+    1. Submit your RSS feed to a podcast app
+    2. Download an episode
+    3. Verify the download appears in your tracking service dashboards
+  </Accordion>
+  
+  <Accordion title="Monitor tracking service uptime">
+    If a tracking service goes down, it can break media downloads. Monitor your services and remove any that are consistently unavailable.
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<Accordion title="Downloads not appearing in analytics">
+  **Check**:
+  1. Verify tracking URLs are correctly formatted in Settings
+  2. Ensure URLs end with `/` if required by the service
+  3. Check RSS feed source to confirm URLs are prepended
+  4. Allow 24-48 hours for some services to process data
+  5. Verify you're logged into the correct tracking service account
+</Accordion>
+
+<Accordion title="Media files not playing">
+  **Common causes**:
+  - Incorrect tracking URL format (missing `/` or protocol)
+  - Tracking service is down
+  - Too many tracking prefixes causing timeout
+  
+  **Fix**:
+  1. Test your media URL directly in a browser
+  2. Test with tracking URL prepended
+  3. Remove tracking URLs temporarily to isolate the issue
+  4. Check tracking service status pages
+</Accordion>
+
+<Accordion title="Different stats between services">
+  This is normal! Different services count downloads differently:
+  - Some filter bot traffic
+  - Some use different time windows for de-duplication
+  - Some count partial downloads differently
+  
+  Use the service with IAB certification (like Podtrac) as your source of truth.
+</Accordion>
+
+<Accordion title="RSS feed shows wrong tracking order">
+  Tracking URLs are prepended in the order listed in Settings:
+  ```
+  Line 1: https://first.com/
+  Line 2: https://second.com/
+  ```
+  
+  Results in:
+  ```
+  https://first.com/second.com/example.com/audio.mp3
+  ```
+  
+  Re-order lines in Settings to change the prefix order.
+</Accordion>
+
+## Why This Matters
+
+Tracking download statistics helps you:
+
+- **Understand your audience** - See which episodes perform best
+- **Prove value to sponsors** - Provide accurate download numbers
+- **Track growth** - Monitor listener trends over time
+- **Optimize content** - Learn what topics resonate
+- **Verify distribution** - Confirm your RSS feed is working
+
+This is a [standard practice in the podcast industry](https://lowerstreet.co/blog/podcast-tracking), used by major podcasters and networks.
+
+## Privacy Considerations
+
+When using tracking services:
+
+- **OP3** - Privacy-focused, minimal data collection, public stats
+- **Podtrac, Chartable** - May collect listener IP addresses and user agents
+- **Your responsibility** - Disclose tracking in your privacy policy
+
+<Warning>
+  Consider informing your listeners that you use download tracking in your podcast's privacy policy or show notes.
+</Warning>
+
+## Example Configurations
+
+### Minimal Setup (Free)
+
+For basic stats without signup:
+```
+https://op3.dev/e/
+```
+
+### Standard Podcast Setup
+
+For serious podcasters:
+```
+https://op3.dev/e/
+https://dts.podtrac.com/redirect.mp3/
+```
+
+### Professional Setup
+
+For podcast networks or sponsored content:
+```
+https://op3.dev/e/
+https://dts.podtrac.com/redirect.mp3/
+https://chtbl.com/track/YOUR_ID/
+```
+
+### Multi-format Setup
+
+For podcasts with both audio and video:
+```
+https://op3.dev/e/
+https://dts.podtrac.com/redirect.mp3/
+https://dts.podtrac.com/redirect.mp4/
+```
+
+<Warning>
+  Only add video tracking URLs if you actually publish video content. Podcast apps may get confused by video-specific prefixes on audio files.
+</Warning>
+
+## Related Pages
+
+- [Settings Management](/configuration/settings) - Overview of all settings
+- [Custom Code Editor](/configuration/custom-code) - Customize your site
+- [Custom Domains](/configuration/custom-domains) - Configure custom domains

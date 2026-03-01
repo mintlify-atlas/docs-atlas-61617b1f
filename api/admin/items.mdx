@@ -1,0 +1,315 @@
+---
+title: 'Items API'
+description: 'Create, update, and delete items (episodes, posts, articles) in your microfeed'
+---
+
+<Warning>
+  All Admin API endpoints require authentication using your API key. You can find your API key in the API section of your microfeed settings at `/admin/settings/`.
+</Warning>
+
+## Create Item
+
+### `POST /api/items/`
+
+Create a new item such as a podcast episode, blog post, or curated article.
+
+#### Authentication
+
+<ParamField header="X-MicrofeedAPI-Key" type="string" required>
+  Your microfeed instance's API key. Find it at `/admin/settings/` in the API section.
+</ParamField>
+
+#### Request Body
+
+<ParamField body="title" type="string">
+  Item title. For podcast episodes, don't include episode/season numbers (use `_microfeed.itunes:episode` and `_microfeed.itunes:season` instead) or repeat the show title.
+</ParamField>
+
+<ParamField body="status" type="string">
+  Item status. One of:
+  - `published` - Listed on web/RSS/JSON feed and visible via direct link
+  - `unpublished` - Not listed anywhere, not visible via direct link (admin can still edit)
+  - `unlisted` - Not listed on feeds but visible via direct link
+  - `deleted` - Marked as deleted (not typically used via API)
+</ParamField>
+
+<ParamField body="content_html" type="string">
+  Item description in HTML. For podcasts, limit to 4000 characters (Apple Podcasts may truncate longer descriptions). Unlimited for blogs.
+</ParamField>
+
+<ParamField body="url" type="string">
+  Item's web link. By default, a page on your microfeed instance.
+</ParamField>
+
+<ParamField body="image" type="string">
+  Square image specific to this item. For podcast episodes, must be 1400x1400 to 3000x3000 pixels, JPEG or PNG, 72 dpi, RGB colorspace. Upload via `/api/media_files/presigned_urls/` first.
+</ParamField>
+
+<ParamField body="date_published_ms" type="integer">
+  Unix epoch timestamp in milliseconds when the item was released. Defaults to current time if not provided.
+</ParamField>
+
+<ParamField body="attachment" type="object">
+  Main media file for this item (audio, video, image, document, or external URL).
+  
+  <ParamField body="attachment.category" type="string">
+    Media category: `audio`, `video`, `image`, `document`, or `external_url`.
+  </ParamField>
+  
+  <ParamField body="attachment.url" type="string">
+    URL of the media file. For audio/video/image/document, use URL from `/api/media_files/presigned_urls/`. For external_url, use the external resource URL.
+  </ParamField>
+  
+  <ParamField body="attachment.mime_type" type="string">
+    MIME type (e.g., "audio/mpeg", "video/mp4", "image/png").
+  </ParamField>
+  
+  <ParamField body="attachment.size_in_bytes" type="integer">
+    File size in bytes (not applicable for external URLs).
+  </ParamField>
+  
+  <ParamField body="attachment.duration_in_seconds" type="integer">
+    Duration in seconds (for audio/video only).
+  </ParamField>
+</ParamField>
+
+<ParamField body="_microfeed" type="object">
+  Podcast-specific metadata fields.
+  
+  <ParamField body="_microfeed.itunes:title" type="string">
+    Alternative episode title for Apple Podcasts.
+  </ParamField>
+  
+  <ParamField body="_microfeed.itunes:block" type="boolean">
+    Set to `true` to remove this episode from Apple Podcasts.
+  </ParamField>
+  
+  <ParamField body="_microfeed.itunes:episodeType" type="string">
+    Episode type: `full` (default), `trailer`, or `bonus`.
+  </ParamField>
+  
+  <ParamField body="_microfeed.itunes:season" type="integer">
+    Season number (non-zero integer like 1, 2, 3).
+  </ParamField>
+  
+  <ParamField body="_microfeed.itunes:episode" type="integer">
+    Episode number. Optional for episodic shows, mandatory for serial shows.
+  </ParamField>
+  
+  <ParamField body="_microfeed.itunes:explicit" type="boolean">
+    Set to `true` for explicit content warning.
+  </ParamField>
+</ParamField>
+
+#### Response
+
+<ResponseField name="id" type="string">
+  The unique ID of the newly created item.
+</ResponseField>
+
+#### Example Request
+
+```bash
+curl -X POST https://your-instance.microfeed.org/api/items/ \
+  -H "Content-Type: application/json" \
+  -H "X-MicrofeedAPI-Key: your-api-key-here" \
+  -d '{
+    "title": "Introduction to Microfeed",
+    "status": "published",
+    "content_html": "<p>Welcome to our first episode!</p>",
+    "date_published_ms": 1669782691867,
+    "image": "https://media-cdn.example.com/images/item-xyz789.png",
+    "attachment": {
+      "category": "audio",
+      "url": "https://media-cdn.example.com/media/audio-abc123.mp3",
+      "mime_type": "audio/mpeg",
+      "size_in_bytes": 15728640,
+      "duration_in_seconds": 1845
+    },
+    "_microfeed": {
+      "itunes:season": 1,
+      "itunes:episode": 1,
+      "itunes:episodeType": "full",
+      "itunes:explicit": false
+    }
+  }'
+```
+
+#### Example Response
+
+```json
+{
+  "id": "GOwipulXxh9"
+}
+```
+
+---
+
+## Update Item
+
+### `PUT /api/items/{id}/`
+
+Update an existing item's metadata. Only provided fields will be updated; omitted fields retain their current values.
+
+#### Authentication
+
+<ParamField header="X-MicrofeedAPI-Key" type="string" required>
+  Your microfeed instance's API key. Find it at `/admin/settings/` in the API section.
+</ParamField>
+
+#### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The item's unique ID (e.g., "GOwipulXxh9").
+</ParamField>
+
+#### Request Body
+
+Accepts the same fields as `POST /api/items/`. Only include fields you want to update.
+
+#### Response
+
+<ResponseField name="status" type="number">
+  HTTP status code: `200` for success, `404` if item not found, `401` for unauthorized.
+</ResponseField>
+
+#### Example Request
+
+```bash
+curl -X PUT https://your-instance.microfeed.org/api/items/GOwipulXxh9/ \
+  -H "Content-Type: application/json" \
+  -H "X-MicrofeedAPI-Key: your-api-key-here" \
+  -d '{
+    "title": "Introduction to Microfeed - Updated",
+    "status": "published",
+    "content_html": "<p>Welcome to our first episode! This is the updated description.</p>"
+  }'
+```
+
+#### Example Response
+
+```json
+{}
+```
+
+---
+
+## Delete Item
+
+### `DELETE /api/items/{id}/`
+
+Delete an item by marking it with the `DELETED` status.
+
+<Warning>
+  This endpoint does not delete associated media files (audio, video, images). Media files remain in your R2 storage.
+</Warning>
+
+#### Authentication
+
+<ParamField header="X-MicrofeedAPI-Key" type="string" required>
+  Your microfeed instance's API key. Find it at `/admin/settings/` in the API section.
+</ParamField>
+
+#### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The item's unique ID (e.g., "GOwipulXxh9").
+</ParamField>
+
+#### Response
+
+<ResponseField name="status" type="number">
+  HTTP status code: `200` for success, `404` if item not found, `401` for unauthorized.
+</ResponseField>
+
+#### Example Request
+
+```bash
+curl -X DELETE https://your-instance.microfeed.org/api/items/GOwipulXxh9/ \
+  -H "X-MicrofeedAPI-Key: your-api-key-here"
+```
+
+#### Example Response
+
+```json
+{}
+```
+
+---
+
+## Get Item
+
+### `GET /api/items/{id}/`
+
+Fetch JSON feed data for a specific item. Returns the same data as `GET /i/{id}/json` but requires authentication and cannot be disabled.
+
+#### Authentication
+
+<ParamField header="X-MicrofeedAPI-Key" type="string" required>
+  Your microfeed instance's API key. Find it at `/admin/settings/` in the API section.
+</ParamField>
+
+#### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The item's unique ID (e.g., "GOwipulXxh9").
+</ParamField>
+
+#### Response
+
+Returns a JSON Feed object with the requested item. See the [JSON Feed specification](https://www.jsonfeed.org/version/1.1/) for full schema details.
+
+#### Example Request
+
+```bash
+curl -X GET https://your-instance.microfeed.org/api/items/GOwipulXxh9/ \
+  -H "X-MicrofeedAPI-Key: your-api-key-here"
+```
+
+#### Example Response
+
+```json
+{
+  "version": "https://jsonfeed.org/version/1.1",
+  "title": "My Podcast",
+  "home_page_url": "https://example.com",
+  "feed_url": "https://example.com/json",
+  "items": [
+    {
+      "id": "GOwipulXxh9",
+      "title": "Introduction to Microfeed",
+      "content_html": "<p>Welcome to our first episode!</p>",
+      "url": "https://example.com/i/introduction-GOwipulXxh9/",
+      "date_published": "2023-01-03T00:35:14.994Z",
+      "attachments": [
+        {
+          "url": "https://media-cdn.example.com/media/audio-abc123.mp3",
+          "mime_type": "audio/mpeg",
+          "size_in_bytes": 15728640,
+          "duration_in_seconds": 1845
+        }
+      ],
+      "_microfeed": {
+        "status": "published",
+        "is_audio": true,
+        "guid": "GOwipulXxh9"
+      }
+    }
+  ]
+}
+```
+
+---
+
+## Item Status Types
+
+Items in microfeed can have the following status values:
+
+- **PUBLISHED** (value: `1` or string: `"published"`) - Listed on web/RSS/JSON feed and visible via direct link
+- **UNPUBLISHED** (value: `2` or string: `"unpublished"`) - Not listed on feeds, not visible via direct link (admin access only)
+- **DELETED** (value: `3` or string: `"deleted"`) - Marked as deleted
+- **UNLISTED** (value: `4` or string: `"unlisted"`) - Not listed on feeds but visible via direct link
+
+<Note>
+  When creating or updating items via the API, use the string values (`"published"`, `"unpublished"`, `"unlisted"`). The numeric values are used internally.
+</Note>

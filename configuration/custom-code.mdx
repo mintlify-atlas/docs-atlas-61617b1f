@@ -1,0 +1,411 @@
+---
+title: Custom code editor
+description: Customize your site's appearance with HTML and CSS
+---
+
+The custom code editor lets you modify your microfeed site's HTML structure and CSS styling. Access it at `/admin/settings/code-editor/` to create a unique design without deploying code changes.
+
+## Overview
+
+microfeed uses [Mustache.js](https://mustache.github.io/) templating to render your site. You can customize six different code files, each controlling a specific part of your site.
+
+## Code Types
+
+Choose between two code type modes:
+
+### Shared HTML Code
+
+Edit global HTML/CSS that applies across all pages:
+
+- Web Header
+- Web Body Start
+- Web Body End
+
+Use this for navigation, analytics, and site-wide elements.
+
+### Theme: Custom
+
+Edit complete page templates and styling:
+
+- Web Feed (homepage template)
+- Web Item (individual item template)
+- Web Header
+- Web Body Start
+- Web Body End
+- RSS Stylesheet
+
+Use this to create a completely custom theme.
+
+## Code Files
+
+### Web Feed
+
+**Purpose**: Template for your public homepage at `/`
+
+**Language**: HTML with Mustache templating
+
+**Variables**: Access all data from your JSON feed at `/json/`
+
+Example structure:
+```html
+<div class="feed">
+  <h1>{{title}}</h1>
+  <p>{{description}}</p>
+  
+  {{#items}}
+  <article class="item">
+    <h2>{{title}}</h2>
+    <div>{{{content_html}}}</div>
+  </article>
+  {{/items}}
+</div>
+```
+
+<Accordion title="Available variables">
+  Access any field from your feed JSON:
+  - `{{title}}` - Feed title
+  - `{{description}}` - Feed description
+  - `{{home_page_url}}` - Your site URL
+  - `{{items}}` - Array of feed items
+  - `{{_microfeed.subscribe_methods}}` - Subscribe methods
+  - See full schema at `/json/openapi.yaml`
+</Accordion>
+
+### Web Item
+
+**Purpose**: Template for individual item pages at `/i/{itemId}/`
+
+**Language**: HTML with Mustache templating
+
+**Variables**: Access item data from `/i/{itemId}/json`
+
+Example structure:
+```html
+<article>
+  <h1>{{title}}</h1>
+  <time>{{date_published}}</time>
+  
+  {{#image}}
+  <img src="{{url}}" alt="{{title}}">
+  {{/image}}
+  
+  <div class="content">
+    {{{content_html}}}
+  </div>
+  
+  {{#attachments}}
+  <audio controls src="{{url}}"></audio>
+  {{/attachments}}
+</article>
+```
+
+<Warning>
+  Use triple braces `{{{content_html}}}` for HTML content to prevent escaping.
+</Warning>
+
+### Web Header
+
+**Purpose**: Code inserted before the `</head>` tag
+
+**Language**: HTML (can include CSS and JavaScript)
+
+**Use cases**:
+- Custom CSS styles
+- Meta tags
+- Analytics scripts (Google Analytics, Plausible)
+- Font imports
+
+Example:
+```html
+<style>
+  body {
+    font-family: 'Helvetica Neue', sans-serif;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .item {
+    margin-bottom: 3rem;
+    border-bottom: 1px solid #eee;
+  }
+</style>
+
+<script defer data-domain="your-site.pages.dev" 
+  src="https://plausible.io/js/script.js"></script>
+```
+
+### Web Body Start
+
+**Purpose**: Code inserted after the `<body>` tag
+
+**Language**: HTML
+
+**Use cases**:
+- Site navigation
+- Header branding
+- Announcement banners
+
+Example:
+```html
+<header class="site-header">
+  <nav>
+    <a href="/">Home</a>
+    <a href="/rss/">RSS</a>
+    <a href="/json/">API</a>
+  </nav>
+  <h1>{{title}}</h1>
+</header>
+```
+
+### Web Body End
+
+**Purpose**: Code inserted before the `</body>` tag
+
+**Language**: HTML
+
+**Use cases**:
+- Footer content
+- Copyright notices
+- Additional scripts
+
+Example:
+```html
+<footer class="site-footer">
+  <p>&copy; 2025 {{title}}. All rights reserved.</p>
+  <p>
+    <a href="/rss/">RSS</a> | 
+    <a href="/json/">JSON</a>
+  </p>
+</footer>
+```
+
+### RSS Stylesheet
+
+**Purpose**: CSS stylesheet for your RSS feed at `/rss/`
+
+**Language**: CSS
+
+**Use case**: Make your RSS feed human-readable in browsers
+
+Example:
+```css
+body {
+  font-family: Arial, sans-serif;
+  max-width: 800px;
+  margin: 50px auto;
+  padding: 0 20px;
+}
+
+item {
+  display: block;
+  margin: 2rem 0;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+title {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+```
+
+<Warning>
+  RSS stylesheet is linked at `/rss/stylesheet.css` and referenced in your RSS feed XML.
+</Warning>
+
+## Mustache Templating
+
+microfeed uses Mustache.js for templating. Key syntax:
+
+### Variables
+
+```html
+{{variable}}        - Escaped HTML
+{{{variable}}}      - Unescaped HTML (use for content_html)
+{{&variable}}       - Unescaped HTML (alternative syntax)
+```
+
+### Sections
+
+```html
+{{#items}}
+  <div>{{title}}</div>
+{{/items}}
+```
+
+### Conditionals
+
+```html
+{{#image}}
+  <img src="{{url}}">
+{{/image}}
+
+{{^image}}
+  <p>No image available</p>
+{{/image}}
+```
+
+### Loops
+
+```html
+{{#subscribe_methods}}
+  <a href="{{url}}">{{name}}</a>
+{{/subscribe_methods}}
+```
+
+## Editor Features
+
+### Code Tabs
+
+Switch between code files using the tab navigation at the top. Your changes are saved per file.
+
+### Live Preview
+
+Click "View live page" to see your changes:
+- Opens your public site in a new tab
+- Updates after clicking "Update"
+- Shows the actual rendered page
+
+### Save Changes
+
+1. Edit code in the editor
+2. Click the "Update" button (right panel)
+3. Wait for "Updated!" confirmation
+4. Changes apply immediately to your live site
+
+<Warning>
+  Always test your changes! Syntax errors in HTML or invalid Mustache templates may break your site.
+</Warning>
+
+## Pro Tips
+
+<AccordionGroup>
+  <Accordion title="Use variables from JSON feed">
+    All variables from `/json/` are available in your templates. Check your JSON feed to see available fields, then reference them with Mustache syntax.
+  </Accordion>
+  
+  <Accordion title="Check OpenAPI spec for schema">
+    View the complete data structure:
+    - YAML: `/json/openapi.yaml`
+    - HTML: `/json/openapi.html`
+  </Accordion>
+  
+  <Accordion title="Test with Mustache playground">
+    Copy your JSON feed data and template to [mustache.github.io](https://mustache.github.io/) to test rendering before deploying.
+  </Accordion>
+  
+  <Accordion title="Start with shared code for simple changes">
+    If you only need custom styles or analytics, use "Shared HTML Code" mode. Only switch to "Theme: Custom" if you need complete control.
+  </Accordion>
+  
+  <Accordion title="Keep backups of your code">
+    Copy your custom code to a local file before major changes. There's no built-in version history.
+  </Accordion>
+</AccordionGroup>
+
+## Common Use Cases
+
+### Add Google Analytics
+
+In **Web Header**:
+```html
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
+</script>
+```
+
+### Add Custom Navigation
+
+In **Web Body Start**:
+```html
+<nav style="padding: 1rem; border-bottom: 2px solid #333;">
+  <a href="/">Home</a> | 
+  <a href="/about/">About</a> | 
+  <a href="/rss/">RSS</a>
+</nav>
+```
+
+### Style Your Homepage
+
+In **Web Header**:
+```html
+<style>
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background: #f5f5f5;
+  }
+  
+  .item {
+    background: white;
+    padding: 2rem;
+    margin: 2rem auto;
+    max-width: 700px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+</style>
+```
+
+### Add Subscribe Buttons
+
+In **Web Feed** template:
+```html
+<div class="subscribe-buttons">
+  {{#_microfeed.subscribe_methods}}
+    <a href="{{url}}" class="subscribe-btn">
+      {{#image}}<img src="{{image}}" alt="{{name}}">{{/image}}
+      {{name}}
+    </a>
+  {{/_microfeed.subscribe_methods}}
+</div>
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Page shows blank after saving">
+    Check for syntax errors:
+    - Unclosed Mustache tags `{{#section}}` without `{{/section}}`
+    - Invalid HTML structure
+    - JavaScript errors in Web Header
+    
+    View browser console (F12) for error messages.
+  </Accordion>
+  
+  <Accordion title="Variables not rendering">
+    Verify the variable exists in your JSON feed:
+    1. Visit `/json/` to see available data
+    2. Check spelling and capitalization
+    3. Ensure proper Mustache syntax: `{{variable}}`
+  </Accordion>
+  
+  <Accordion title="Styles not applying">
+    - Check CSS syntax in Web Header
+    - Ensure `<style>` tags are closed
+    - Use browser DevTools to inspect element styles
+    - Check for conflicting default styles
+  </Accordion>
+  
+  <Accordion title="Changes not visible">
+    - Hard refresh your browser (Ctrl+F5 or Cmd+Shift+R)
+    - Clear browser cache
+    - Try incognito/private browsing mode
+    - Verify you clicked "Update" and saw confirmation
+  </Accordion>
+</AccordionGroup>
+
+## Related Pages
+
+- [Settings Management](/configuration/settings) - Configure global settings
+- [Tracking URLs](/configuration/tracking-urls) - Set up media tracking
+- [Custom Domains](/configuration/custom-domains) - Use your own domain

@@ -1,0 +1,108 @@
+---
+title: Cloudflare setup
+description: Complete the setup process in your Cloudflare dashboard
+---
+
+After deploying microfeed to Cloudflare Pages, you need to complete a few setup steps in your Cloudflare dashboard. These steps configure your custom domain and protect your admin dashboard.
+
+## Access the admin dashboard
+
+Your admin dashboard is located at:
+
+```
+https://${CLOUDFLARE_PROJECT_NAME}.pages.dev/admin
+```
+
+For example: [https://microfeed-org.pages.dev/admin/](https://microfeed-org.pages.dev/admin/)
+
+<Warning>
+The admin dashboard needs to be protected by Cloudflare Zero Trust before you can use it. The first time you access it, you'll be guided through the setup process.
+</Warning>
+
+## Complete the setup checklist
+
+When you first access the admin dashboard, you'll see a setup checklist that guides you through the remaining configuration steps.
+
+![Setup checklist](https://user-images.githubusercontent.com/1719237/208216864-38a65086-77ef-4595-bc05-c87be2676e6d.png)
+
+The checklist includes:
+
+### 1. Set up Cloudflare Zero Trust
+
+<Steps>
+  <Step title="Create a Zero Trust application">
+    Follow the prompts to create a Zero Trust application that protects your `/admin` path.
+  </Step>
+
+  <Step title="Configure authentication">
+    Choose your authentication method (email OTP, social login, etc.) for accessing the admin dashboard.
+  </Step>
+
+  <Step title="Set access policies">
+    Define who can access your admin dashboard. You can restrict access to specific email addresses or domains.
+  </Step>
+</Steps>
+
+<Info>
+Cloudflare Zero Trust is free for up to 50 users and provides secure, passwordless access to your admin dashboard.
+</Info>
+
+### 2. Connect a custom domain
+
+<Steps>
+  <Step title="Add custom domain">
+    In your Pages project settings, add your custom domain (e.g., `blog.yourdomain.com`).
+  </Step>
+
+  <Step title="Update DNS">
+    Follow Cloudflare's instructions to add the necessary DNS records to point your domain to Pages.
+  </Step>
+
+  <Step title="Enable HTTPS">
+    Cloudflare automatically provisions an SSL certificate for your custom domain.
+  </Step>
+</Steps>
+
+### 3. Initialize your feed
+
+<Steps>
+  <Step title="Configure feed settings">
+    Set your feed title, description, and other metadata from the admin dashboard.
+  </Step>
+
+  <Step title="Set up branding">
+    Upload a logo and configure colors to match your brand.
+  </Step>
+
+  <Step title="Test the configuration">
+    Visit your site to confirm your settings are applied correctly.
+  </Step>
+</Steps>
+
+## Admin dashboard features
+
+Once setup is complete, your admin dashboard provides:
+
+- **Content management**: Add, edit, and delete feed items
+- **Media upload**: Upload images, videos, audio files, and documents
+- **Feed settings**: Configure metadata, RSS settings, and JSON feed options
+- **Custom code**: Edit HTML and CSS templates using Mustache.js
+- **Tracking URLs**: Set up third-party tracking for media downloads
+- **Analytics**: View basic statistics about your feed
+
+## Understanding the architecture
+
+Your microfeed instance uses:
+
+- **Cloudflare Pages**: Serves your website and runs the application code
+- **Cloudflare D1**: Stores all feed metadata in a SQLite database
+- **Cloudflare R2**: Stores and serves uploaded media files
+- **Cloudflare Zero Trust**: Protects your admin dashboard with secure authentication
+
+<Info>
+All of these services are included in Cloudflare's free tier with generous usage limits.
+</Info>
+
+## What's next
+
+Your microfeed instance is now fully configured and ready to use. Start publishing content to your feed!

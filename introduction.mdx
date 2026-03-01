@@ -1,0 +1,114 @@
+---
+title: "Introduction"
+description: "A lightweight CMS self-hosted on Cloudflare for publishing podcasts, blogs, photos, videos, and more"
+---
+
+## Welcome to microfeed
+
+microfeed is a lightweight content management system (CMS) that you can self-host on Cloudflare. With microfeed, you can easily publish a variety of content such as audios, videos, photos, documents, blog posts, and external URLs to a feed in the form of web, RSS, and JSON.
+
+It's the perfect solution for tech-savvy individuals who want to self-host their own CMS without having to run their own servers.
+
+<CardGroup cols={2}>
+  <Card title="Quick setup" icon="rocket" href="/quickstart">
+    Get your microfeed instance running in minutes with our step-by-step guide.
+  </Card>
+  <Card title="Live examples" icon="globe" href="https://llamacorn.listennotes.com/">
+    See microfeed in action with real-world examples.
+  </Card>
+  <Card title="GitHub repository" icon="github" href="https://github.com/microfeed/microfeed">
+    Fork the repository and start customizing your own instance.
+  </Card>
+  <Card title="Admin dashboard" icon="gauge" href="/features/admin-dashboard">
+    Learn about the powerful admin interface for managing your content.
+  </Card>
+</CardGroup>
+
+## What you can build with microfeed
+
+microfeed is versatile and can power a wide range of content sites:
+
+- **Podcast feed** - Publish and distribute your audio content with RSS support
+- **Blog** - Create a personal or professional blog with full customization
+- **Photo gallery** - Build an Instagram-like feed of images (like [llamacorn.listennotes.com](https://llamacorn.listennotes.com/))
+- **Video platform** - Share your video content YouTube-style
+- **Personal website** - Create a custom link-in-bio page (like [wenbin.org](https://www.wenbin.org/))
+- **Content curation** - Aggregate and share external news articles
+- **Marketing site** - Showcase updates and press coverage (like [microfeed.org](https://www.microfeed.org/))
+- **Headless CMS** - Use the JSON API for custom client applications
+- **Changelog** - Document product updates and releases
+
+## How it works
+
+microfeed leverages Cloudflare's powerful serverless infrastructure:
+
+<Steps>
+  <Step title="Pages for hosting">
+    Your microfeed instance runs on [Cloudflare Pages](https://pages.cloudflare.com/), providing fast, global deployment without managing servers.
+  </Step>
+  <Step title="R2 for media storage">
+    Media files are stored and served from [Cloudflare R2](https://www.cloudflare.com/products/r2/), offering S3-compatible object storage with zero egress fees.
+  </Step>
+  <Step title="D1 for database">
+    Metadata is stored in [Cloudflare D1](https://developers.cloudflare.com/d1/), a serverless SQLite database at the edge.
+  </Step>
+  <Step title="Zero Trust for security">
+    Admin access is protected by [Cloudflare Zero Trust](https://www.cloudflare.com/products/zero-trust/), ensuring secure authentication without passwords.
+  </Step>
+</Steps>
+
+<Info>
+  Cloudflare provides very generous free usage quotas, making microfeed essentially free to host (you'll only need to pay for your domain name).
+</Info>
+
+## Key features
+
+### Multiple content types
+
+Publish diverse content formats including audio, video, photos, documents, blog posts, and external URLs - all from a single unified interface.
+
+### Three feed formats
+
+Your content is automatically available in three formats:
+- **Web feed** - A customizable website for your content
+- **RSS feed** - Standard RSS 2.0 for podcast players and feed readers
+- **JSON feed** - A modern JSON API following the [JSON Feed specification](https://www.jsonfeed.org/)
+
+### Simple admin dashboard
+
+Manage your content through an intuitive admin interface that will feel familiar if you've used WordPress. Add, update, or delete items with ease.
+
+### Full customization
+
+Customize your site's appearance by editing HTML and CSS directly in the dashboard. The templating system uses [mustache.js](https://github.com/janl/mustache.js) with access to your feed and item data.
+
+### Headless CMS capabilities
+
+Access your content via JSON APIs to build custom client applications. Every feed and item has a corresponding JSON endpoint.
+
+## Why microfeed?
+
+<CardGroup cols={2}>
+  <Card title="No server management" icon="server">
+    Run on Cloudflare's edge network without maintaining servers.
+  </Card>
+  <Card title="Generous free tier" icon="dollar-sign">
+    10GB storage, 10 million reads/month, 1 million writes/month included free.
+  </Card>
+  <Card title="Open source" icon="code-branch">
+    Full source code available under AGPL-3.0 license.
+  </Card>
+  <Card title="Built by Listen Notes" icon="podcast">
+    Created by the team behind the popular podcast search engine.
+  </Card>
+</CardGroup>
+
+## Ready to get started?
+
+<Card title="Follow the quickstart guide" icon="rocket" href="/quickstart" horizontal>
+  Set up your own microfeed instance in just a few steps.
+</Card>
+
+<Note>
+  Questions or feedback? Reach out at [support@microfeed.org](mailto:support@microfeed.org)
+</Note>

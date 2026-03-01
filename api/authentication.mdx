@@ -1,0 +1,199 @@
+---
+title: 'Authentication'
+description: 'Learn how to authenticate your requests to the microfeed Admin API'
+---
+
+## Overview
+
+microfeed uses API key authentication for all Admin API endpoints. The Feed API endpoints are public and don't require authentication.
+
+<Note>
+  **Feed API vs Admin API**
+  
+  - **Feed API** (`/json`, `/i/{id}/json`) - Public, no authentication required
+  - **Admin API** (`/api/*`) - Requires API key authentication
+</Note>
+
+## Getting Your API Key
+
+Your API key is available in your microfeed admin dashboard:
+
+1. Log in to your microfeed admin dashboard
+2. Navigate to `/admin/settings/`
+3. Scroll to the **API** section
+4. Your API key will be displayed there
+
+<Warning>
+  Keep your API key secure! It provides full access to your microfeed instance. Never commit it to version control or share it publicly.
+</Warning>
+
+## Using Your API Key
+
+To authenticate your requests, include your API key in the `X-MicrofeedAPI-Key` header:
+
+```bash
+curl https://your-microfeed-instance.com/api/items/ \
+  -H "X-MicrofeedAPI-Key: your_api_key_here" \
+  -H "Content-Type: application/json"
+```
+
+## Authentication Examples
+
+<CodeGroup>
+
+```bash cURL
+# Create a new item
+curl -X POST https://your-microfeed-instance.com/api/items/ \
+  -H "X-MicrofeedAPI-Key: your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "My New Episode",
+    "status": "published",
+    "content_html": "<p>Episode description</p>"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://your-microfeed-instance.com/api/items/', {
+  method: 'POST',
+  headers: {
+    'X-MicrofeedAPI-Key': 'your_api_key_here',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    title: 'My New Episode',
+    status: 'published',
+    content_html: '<p>Episode description</p>'
+  })
+});
+
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+url = 'https://your-microfeed-instance.com/api/items/'
+headers = {
+    'X-MicrofeedAPI-Key': 'your_api_key_here',
+    'Content-Type': 'application/json'
+}
+data = {
+    'title': 'My New Episode',
+    'status': 'published',
+    'content_html': '<p>Episode description</p>'
+}
+
+response = requests.post(url, headers=headers, json=data)
+print(response.json())
+```
+
+```php PHP
+<?php
+$url = 'https://your-microfeed-instance.com/api/items/';
+$data = [
+    'title' => 'My New Episode',
+    'status' => 'published',
+    'content_html' => '<p>Episode description</p>'
+];
+
+$options = [
+    'http' => [
+        'header' => "X-MicrofeedAPI-Key: your_api_key_here\r\n" .
+                   "Content-Type: application/json\r\n",
+        'method' => 'POST',
+        'content' => json_encode($data)
+    ]
+];
+
+$context = stream_context_create($options);
+$response = file_get_contents($url, false, $context);
+$result = json_decode($response, true);
+?>
+```
+
+</CodeGroup>
+
+## Authentication Errors
+
+If authentication fails, you'll receive a `401 Unauthorized` response:
+
+```json
+"Unauthorized"
+```
+
+**Common causes:**
+- Missing `X-MicrofeedAPI-Key` header
+- Invalid or expired API key
+- API access is disabled in your microfeed settings
+
+## Security Best Practices
+
+Follow these guidelines to keep your API key secure:
+
+<AccordionGroup>
+  <Accordion title="Use environment variables">
+    Store your API key in environment variables instead of hardcoding it:
+    
+    ```bash
+    export MICROFEED_API_KEY="your_api_key_here"
+    ```
+    
+    Then reference it in your code:
+    
+    ```javascript
+    const apiKey = process.env.MICROFEED_API_KEY;
+    ```
+  </Accordion>
+  
+  <Accordion title="Restrict access">
+    Only use your API key in trusted environments:
+    - Server-side applications
+    - Secure CI/CD pipelines
+    - Local development environments
+    
+    Never expose your API key in:
+    - Client-side JavaScript
+    - Public repositories
+    - Browser requests
+  </Accordion>
+  
+  <Accordion title="Monitor usage">
+    Regularly check your admin dashboard for:
+    - Unexpected API activity
+    - Failed authentication attempts
+    - Unusual content changes
+  </Accordion>
+  
+  <Accordion title="Regenerate if compromised">
+    If you suspect your API key has been compromised:
+    1. Generate a new API key in `/admin/settings/`
+    2. Update all applications using the old key
+    3. Monitor for unauthorized access
+  </Accordion>
+</AccordionGroup>
+
+## Feed API (No Authentication)
+
+The Feed API endpoints don't require authentication and are publicly accessible:
+
+```bash
+# Fetch the feed (no API key needed)
+curl https://your-microfeed-instance.com/json
+
+# Fetch a specific item (no API key needed)
+curl https://your-microfeed-instance.com/i/GOwipulXxh9/json
+```
+
+These endpoints can be disabled in your admin settings if you want to keep your feed private.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Feed API Endpoints" icon="rss" href="/api/feed/get-feed">
+    Explore public endpoints for fetching content
+  </Card>
+  <Card title="Admin API Endpoints" icon="lock" href="/api/admin/items">
+    Learn how to manage your content programmatically
+  </Card>
+</CardGroup>

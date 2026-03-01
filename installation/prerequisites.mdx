@@ -1,0 +1,39 @@
+---
+title: Prerequisites
+description: Requirements before installing microfeed
+---
+
+Before you begin installing microfeed, you need to have accounts on two platforms. Both offer free tiers that are sufficient for running microfeed.
+
+## Required accounts
+
+### Cloudflare account
+
+You need a Cloudflare account to host your microfeed instance. Cloudflare provides the infrastructure for:
+
+- **Pages**: Hosting and running the code
+- **R2**: Storing and serving media files
+- **D1**: Storing metadata in a SQLite database
+- **Zero Trust**: Protecting your admin dashboard with secure logins
+
+Cloudflare offers very generous free usage quotas, making it essentially free to host microfeed for personal or small business use.
+
+<Info>
+While you'll still need to pay for a domain name, hosting microfeed on Cloudflare is free under their generous usage limits.
+</Info>
+
+[Sign up for a free Cloudflare account](https://dash.cloudflare.com/sign-up)
+
+### GitHub account
+
+You need a GitHub account to:
+
+- Fork the microfeed repository
+- Store your secrets securely
+- Use GitHub Actions to deploy code to Cloudflare
+
+[Sign up for a free GitHub account](https://github.com/signup)
+
+## What's next
+
+Once you have both accounts set up, you're ready to fork the microfeed repository and begin the installation process.

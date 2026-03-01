@@ -1,0 +1,258 @@
+---
+title: Database Schema
+description: Complete reference for the D1 database tables and schema used by microfeed
+---
+
+microfeed uses Cloudflare D1, a serverless SQLite database, to store all metadata. The schema is designed to be simple and efficient, with three core tables.
+
+## Schema Overview
+
+The database consists of three main tables:
+
+- **channels**: Stores feed/channel configuration and metadata
+- **items**: Stores individual content items (posts, episodes, etc.)
+- **settings**: Stores system settings and customization
+
+## channels Table
+
+The channels table stores configuration for your feed(s). In most cases, you'll have one primary channel.
+
+```sql
+CREATE TABLE IF NOT EXISTS channels (
+  id VARCHAR(11) PRIMARY KEY,
+
+  status TINYINT,   /* 1: PUBLISHED, 2: UNPUBLISHED, 3: DELETED */
+  is_primary BOOLEAN UNIQUE,  /* True or NULL*/
+  data TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS channels_status on channels (status);
+CREATE INDEX IF NOT EXISTS channels_is_primary on channels (is_primary);
+CREATE INDEX IF NOT EXISTS channels_created_at on channels (created_at);
+CREATE INDEX IF NOT EXISTS channels_updated_at on channels (updated_at);
+```
+
+### Column Descriptions
+
+**id** (`VARCHAR(11)`, PRIMARY KEY)  
+Unique identifier for the channel. Generated as an 11-character alphanumeric string.
+
+**status** (`TINYINT`)  
+Publication status of the channel:
+- `1`: PUBLISHED - Channel is active and visible
+- `2`: UNPUBLISHED - Channel is hidden but not deleted
+- `3`: DELETED - Channel is marked for deletion
+
+**is_primary** (`BOOLEAN`, UNIQUE)  
+Indicates if this is the primary channel. Can be `TRUE` for one channel or `NULL` for others. The UNIQUE constraint ensures only one primary channel exists.
+
+**data** (`TEXT`)  
+JSON string containing channel metadata including:
+- Feed title and description
+- Author information
+- Custom HTML/CSS templates
+- RSS configuration
+- Other channel-specific settings
+
+**created_at** (`TIMESTAMP`)  
+Timestamp when the channel was created. Defaults to current timestamp.
+
+**updated_at** (`TIMESTAMP`)  
+Timestamp when the channel was last modified. Defaults to current timestamp.
+
+### Indexes
+
+The table has four indexes for query optimization:
+- `channels_status`: Fast filtering by publication status
+- `channels_is_primary`: Quick lookup of the primary channel
+- `channels_created_at`: Chronological ordering
+- `channels_updated_at`: Finding recently modified channels
+
+## items Table
+
+The items table stores individual content pieces (blog posts, podcast episodes, photos, etc.).
+
+```sql
+CREATE TABLE IF NOT EXISTS items (
+  id VARCHAR(11) PRIMARY KEY,
+  status TINYINT, /* 1: PUBLISHED, 2: UNPUBLISHED, 3: DELETED */
+  data TEXT,
+  pub_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS items_pub_date on items (pub_date);
+CREATE INDEX IF NOT EXISTS items_created_at on items (created_at);
+CREATE INDEX IF NOT EXISTS items_updated_at on items (updated_at);
+CREATE INDEX IF NOT EXISTS items_status on items (status);
+```
+
+### Column Descriptions
+
+**id** (`VARCHAR(11)`, PRIMARY KEY)  
+Unique identifier for the item. Generated as an 11-character alphanumeric string.
+
+**status** (`TINYINT`)  
+Publication status of the item:
+- `1`: PUBLISHED - Item is visible on the feed
+- `2`: UNPUBLISHED - Item is saved but hidden
+- `3`: DELETED - Item is marked for deletion
+
+**data** (`TEXT`)  
+JSON string containing item content and metadata including:
+- Title and description
+- Content/body text
+- Media file references (R2 URLs)
+- Enclosures (audio, video)
+- Custom fields
+- SEO metadata
+
+**pub_date** (`TIMESTAMP`)  
+Publication date/time for the item. This determines the order items appear in the feed. Defaults to current timestamp but can be set to future dates for scheduled publishing.
+
+**created_at** (`TIMESTAMP`)  
+Timestamp when the item was first created in the system. Defaults to current timestamp.
+
+**updated_at** (`TIMESTAMP`)  
+Timestamp when the item was last modified. Defaults to current timestamp.
+
+### Indexes
+
+The table has four indexes for query optimization:
+- `items_pub_date`: Critical for feed ordering (most recent first)
+- `items_created_at`: Track when items were added
+- `items_updated_at`: Find recently edited items
+- `items_status`: Filter by publication status
+
+## settings Table
+
+The settings table stores system-wide configuration and customization.
+
+```sql
+CREATE TABLE IF NOT EXISTS settings (
+  category VARCHAR(20) PRIMARY KEY,
+  data TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Column Descriptions
+
+**category** (`VARCHAR(20)`, PRIMARY KEY)  
+Unique identifier for the setting category. Acts as the primary key, meaning each category can only have one entry.
+
+Common categories include:
+- Custom HTML templates
+- CSS styles
+- Tracking URLs (for analytics)
+- System preferences
+- Integration settings
+
+**data** (`TEXT`)  
+JSON string or text containing the actual settings data. Structure varies by category.
+
+**created_at** (`TIMESTAMP`)  
+Timestamp when the setting was first created. Defaults to current timestamp.
+
+**updated_at** (`TIMESTAMP`)  
+Timestamp when the setting was last modified. Defaults to current timestamp.
+
+## Data Model Design
+
+### JSON Storage Pattern
+
+All three tables use a `data` column (TEXT type) to store JSON. This provides flexibility:
+
+**Advantages:**
+- Schema flexibility without migrations
+- Easy to add new fields
+- Simple backup/restore
+- Compatible with SQLite limitations
+
+**Considerations:**
+- Cannot index JSON fields directly
+- Must parse JSON in application code
+- Requires careful data validation
+
+### Status Pattern
+
+Both channels and items use the same status enum pattern:
+- `1` = PUBLISHED
+- `2` = UNPUBLISHED  
+- `3` = DELETED
+
+This allows soft deletes and draft functionality without complex logic.
+
+### Timestamp Tracking
+
+All tables track `created_at` and `updated_at`. The items table adds `pub_date` to separate creation time from publication time, enabling:
+- Draft scheduling
+- Future-dated posts
+- Accurate feed chronology
+
+## Querying Examples
+
+Here are some common query patterns:
+
+### Get Published Items
+
+```sql
+SELECT * FROM items 
+WHERE status = 1 
+ORDER BY pub_date DESC 
+LIMIT 20;
+```
+
+### Find Primary Channel
+
+```sql
+SELECT * FROM channels 
+WHERE is_primary = TRUE 
+AND status = 1;
+```
+
+### Get Recent Updates
+
+```sql
+SELECT * FROM items 
+WHERE updated_at > datetime('now', '-7 days')
+ORDER BY updated_at DESC;
+```
+
+## Accessing the Database
+
+You can interact with your D1 database using the Wrangler CLI:
+
+### Execute SQL Query
+
+```bash
+wrangler d1 execute FEED_DB --command "SELECT * FROM items LIMIT 5;"
+```
+
+### Run SQL File
+
+```bash
+wrangler d1 execute FEED_DB --file=./query.sql
+```
+
+### Export Database
+
+```bash
+wrangler d1 export FEED_DB --output=backup.sql
+```
+
+See the [Backup and Restore](/advanced/backup-and-restore) guide for more details.
+
+## Schema Location
+
+The complete schema is defined in the source code at:
+
+```
+ops/db/init.sql
+```
+
+This file is executed during deployment to initialize the database structure.

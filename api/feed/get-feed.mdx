@@ -1,0 +1,246 @@
+---
+title: 'Get Feed'
+description: 'Fetch JSON feed data including channel metadata and items'
+---
+
+## Overview
+
+The `/json` endpoint returns your microfeed content in [JSON Feed format](https://www.jsonfeed.org/version/1.1/). This is a public, read-only endpoint that doesn't require authentication.
+
+<Info>
+  This endpoint follows the [JSON Feed 1.1 specification](https://www.jsonfeed.org/version/1.1/), making it compatible with feed readers and aggregators that support this standard.
+</Info>
+
+## Endpoint
+
+```
+GET /json
+```
+
+## Parameters
+
+<ParamField query="next_cursor" type="integer" optional>
+  Pagination cursor for fetching the next page of items. Use the `_microfeed.items_next_cursor` value from the previous response.
+  
+  **Example:** `1672707197212`
+</ParamField>
+
+<ParamField query="sort" type="string" optional default="newest_first">
+  Sort order for items in the feed.
+  
+  **Options:**
+  - `newest_first` - Most recent items first (default)
+  - `oldest_first` - Oldest items first
+</ParamField>
+
+## Response
+
+Returns a JSON Feed object containing channel metadata and an array of items.
+
+<ResponseField name="version" type="string" required>
+  The JSON Feed version URL. Always `https://jsonfeed.org/version/1.1`
+</ResponseField>
+
+<ResponseField name="title" type="string" required>
+  The channel name (e.g., podcast name or blog title)
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Channel description in HTML format
+</ResponseField>
+
+<ResponseField name="home_page_url" type="string">
+  The channel's website URL
+</ResponseField>
+
+<ResponseField name="feed_url" type="string">
+  The URL of this JSON feed
+</ResponseField>
+
+<ResponseField name="next_url" type="string">
+  URL for the next page of items (includes `next_cursor` and `sort` parameters)
+</ResponseField>
+
+<ResponseField name="icon" type="string">
+  Channel cover image URL. For podcasts, must be 1400x1400 to 3000x3000 pixels (JPEG or PNG, 72 dpi, RGB colorspace)
+</ResponseField>
+
+<ResponseField name="favicon" type="string">
+  Favicon URL for the site
+</ResponseField>
+
+<ResponseField name="language" type="string">
+  Primary language code in RFC 5646 format (e.g., `en-us`)
+</ResponseField>
+
+<ResponseField name="items" type="array">
+  Array of feed items. See the Items section below for structure.
+</ResponseField>
+
+<ResponseField name="_microfeed" type="object">
+  Microfeed-specific metadata including:
+  - `microfeed_version` - The microfeed software version
+  - `base_url` - Base URL of the site
+  - `categories` - Channel categories (for podcasts)
+  - `subscribe_methods` - Available subscription methods
+  - `items_sort_order` - Current sort order
+  - `items_next_cursor` - Cursor for next page of items
+  - iTunes-specific fields for podcast distribution
+</ResponseField>
+
+### Item Structure
+
+Each item in the `items` array contains:
+
+<ResponseField name="id" type="string" required>
+  Unique item identifier
+</ResponseField>
+
+<ResponseField name="title" type="string" required>
+  Item title
+</ResponseField>
+
+<ResponseField name="content_html" type="string">
+  Item description in HTML format
+</ResponseField>
+
+<ResponseField name="content_text" type="string">
+  Plain text version of the description
+</ResponseField>
+
+<ResponseField name="url" type="string">
+  Web page URL for this item
+</ResponseField>
+
+<ResponseField name="date_published" type="string">
+  Publication date in RFC 3339 format (e.g., `2023-01-03T00:35:14.994Z`)
+</ResponseField>
+
+<ResponseField name="image" type="string">
+  Square image specific to this item
+</ResponseField>
+
+<ResponseField name="attachments" type="array">
+  Array of media attachments (audio, video, document, image, or external URL). Each attachment includes:
+  - `url` - Media file URL
+  - `mime_type` - Content type (e.g., `audio/mpeg`)
+  - `size_in_bytes` - File size
+  - `duration_in_seconds` - Duration for audio/video files
+</ResponseField>
+
+<ResponseField name="_microfeed" type="object">
+  Item-specific metadata including:
+  - `status` - Publication status (`published`, `unlisted`, `unpublished`)
+  - `guid` - Unique identifier for feed readers
+  - `web_url`, `json_url`, `rss_url` - Various URL formats
+  - Media type flags (`is_audio`, `is_video`, `is_image`, etc.)
+  - iTunes-specific fields for podcast episodes
+</ResponseField>
+
+## Examples
+
+### Basic Request
+
+```bash
+curl https://your-microfeed.com/json
+```
+
+### With Pagination
+
+```bash
+curl "https://your-microfeed.com/json?next_cursor=1672707197212&sort=newest_first"
+```
+
+### Response Example
+
+```json
+{
+  "version": "https://jsonfeed.org/version/1.1",
+  "title": "My Awesome Podcast",
+  "description": "<p>A podcast about interesting topics</p>",
+  "home_page_url": "https://your-microfeed.com",
+  "feed_url": "https://your-microfeed.com/json",
+  "next_url": "https://your-microfeed.com/json?next_cursor=1672707197212&sort=newest_first",
+  "icon": "https://media-cdn.your-microfeed.com/images/channel-abc123.png",
+  "language": "en-us",
+  "items": [
+    {
+      "id": "EOvEbn2lb8r",
+      "title": "Episode 1: Getting Started",
+      "content_html": "<p>Welcome to our first episode</p>",
+      "content_text": "Welcome to our first episode",
+      "url": "https://your-microfeed.com/i/episode-1-EOvEbn2lb8r/",
+      "date_published": "2023-01-03T00:35:14.994Z",
+      "image": "https://media-cdn.your-microfeed.com/images/item-def456.png",
+      "attachments": [
+        {
+          "url": "https://media-cdn.your-microfeed.com/media/audio-xyz789.mp3",
+          "mime_type": "audio/mpeg",
+          "size_in_bytes": 25678900,
+          "duration_in_seconds": 3600
+        }
+      ],
+      "_microfeed": {
+        "status": "published",
+        "is_audio": true,
+        "is_video": false,
+        "guid": "EOvEbn2lb8r",
+        "web_url": "https://your-microfeed.com/i/episode-1-EOvEbn2lb8r/",
+        "json_url": "https://your-microfeed.com/i/EOvEbn2lb8r/json",
+        "date_published_ms": 1672707314994
+      }
+    }
+  ],
+  "_microfeed": {
+    "microfeed_version": "0.1.0",
+    "base_url": "https://your-microfeed.com",
+    "items_sort_order": "newest_first",
+    "items_next_cursor": "1672707197212",
+    "subscribe_methods": [
+      {
+        "name": "RSS",
+        "type": "rss",
+        "url": "https://your-microfeed.com/rss"
+      },
+      {
+        "name": "JSON",
+        "type": "json",
+        "url": "https://your-microfeed.com/json"
+      }
+    ]
+  }
+}
+```
+
+## Pagination
+
+The feed returns a limited number of items per request (configured in admin settings). To fetch more items:
+
+1. Check the `_microfeed.items_next_cursor` field in the response
+2. If present, use it in the `next_cursor` parameter for the next request
+3. Maintain the same `sort` parameter to ensure consistent ordering
+
+The `next_url` field provides a pre-formatted URL for the next page.
+
+## Error Responses
+
+### 404 Not Found
+
+The JSON feed is disabled in admin settings at `/admin/settings/`. To enable it, toggle the "Visible" option for "JSON" in the "Subscribe methods" section.
+
+```bash
+Not Found
+```
+
+## Use Cases
+
+- **Feed Readers**: Compatible with any JSON Feed reader
+- **Custom Integrations**: Parse feed data for custom displays
+- **Analytics**: Track content and metadata programmatically
+- **Syndication**: Distribute content to other platforms
+- **Backup**: Export feed data for archival purposes
+
+## Related Endpoints
+
+- [Get Item](/api/feed/get-item) - Fetch JSON for a single item
+- Admin API endpoints require authentication (see Admin API section)

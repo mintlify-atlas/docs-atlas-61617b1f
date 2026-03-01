@@ -1,0 +1,197 @@
+---
+title: Content Types
+description: Publish audio, video, photos, documents, blog posts, and external URLs to your microfeed
+---
+
+microfeed supports six different content types, giving you the flexibility to publish virtually any kind of content to your feed. Whether you're creating a podcast, photo gallery, blog, or curated link collection, microfeed handles it all.
+
+## Supported Content Types
+
+<CardGroup cols={2}>
+  <Card title="Audio" icon="microphone">
+    Perfect for podcasts and audio content. Supports MP3, M4B, and FLAC formats.
+  </Card>
+  <Card title="Video" icon="video">
+    Host video content in MP4 format with full metadata support.
+  </Card>
+  <Card title="Photos" icon="image">
+    Share images in PNG, JPG, JPEG, GIF, HEIC, and CR2 formats.
+  </Card>
+  <Card title="Documents" icon="file">
+    Publish PDF, DOCX, DOC, XLSX, PPT, PPTX, and TXT files.
+  </Card>
+  <Card title="Blog Posts" icon="pen">
+    Write and publish text content with rich HTML formatting.
+  </Card>
+  <Card title="External URLs" icon="link">
+    Curate and share links to external web pages.
+  </Card>
+</CardGroup>
+
+## Content Type Details
+
+### Audio Files
+
+Audio content is ideal for podcasts and audio blogs. When you upload an audio file, microfeed automatically:
+
+- Detects the duration and file size
+- Generates proper RSS podcast tags (iTunes-compatible)
+- Supports episode numbering and season organization
+- Enables tracking URL prefixes for download analytics
+
+**Supported formats:** MP3, M4B, FLAC
+
+```javascript
+// Example audio item metadata from JSON feed
+{
+  "id": "uhbQEmArlC2",
+  "title": "Episode 1: Introduction",
+  "attachments": [{
+    "url": "https://media-cdn.microfeed.org/media/audio-abc123.mp3",
+    "mime_type": "audio/mpeg",
+    "size_in_byte": 24567890,
+    "duration_in_seconds": 1820
+  }],
+  "_microfeed": {
+    "is_audio": true,
+    "duration_hhmmss": "00:30:20",
+    "itunes:season": 1,
+    "itunes:episode": 1
+  }
+}
+```
+
+### Video Files
+
+Video content works similarly to audio, with support for embedded playback and metadata extraction.
+
+**Supported formats:** MP4
+
+<Info>
+Video files are hosted on Cloudflare R2 and served through your custom domain, ensuring fast delivery worldwide.
+</Info>
+
+### Photos
+
+Images can be used as the primary content or as thumbnails for other content types. microfeed supports a wide range of image formats including professional RAW formats.
+
+**Supported formats:** PNG, JPG, JPEG, GIF, HEIC, CR2
+
+<Tabs>
+  <Tab title="Photo Feed Example">
+    ```javascript
+    {
+      "id": "photoXYZ",
+      "title": "Sunset at the Beach",
+      "image": "https://media-cdn.microfeed.org/media/image-xyz789.jpg",
+      "_microfeed": {
+        "is_image": true
+      },
+      "banner_image": "https://media-cdn.microfeed.org/media/image-xyz789.jpg"
+    }
+    ```
+  </Tab>
+  <Tab title="Use Cases">
+    - Instagram-like photo feeds
+    - Portfolio galleries
+    - Product showcases
+    - Brand asset libraries
+    - Visual documentation
+  </Tab>
+</Tabs>
+
+### Documents
+
+Share downloadable files like PDFs, presentations, spreadsheets, and text documents.
+
+**Supported formats:** PDF, DOCX, DOC, XLSX, PPT, PPTX, TXT
+
+```javascript
+{
+  "id": "docABC",
+  "title": "2024 Annual Report",
+  "attachments": [{
+    "url": "https://media-cdn.microfeed.org/media/document-report.pdf",
+    "mime_type": "application/pdf",
+    "size_in_byte": 1234567
+  }],
+  "_microfeed": {
+    "is_document": true
+  }
+}
+```
+
+### Blog Posts
+
+Publish text-based content with rich HTML formatting. Blog posts don't require a media file attachment - just a title and description.
+
+<Note>
+You can use the rich text editor in the admin dashboard to format your blog posts with headings, lists, links, and embedded media.
+</Note>
+
+### External URLs
+
+Curate links to external web pages, perfect for creating:
+
+- Link blogs and curated content feeds
+- Press coverage collections
+- Bookmark collections
+- Resource directories
+
+**Bookmarklet Feature:** microfeed provides a browser bookmarklet that lets you quickly add external URLs while browsing.
+
+```html
+<!-- Drag this to your bookmarks bar -->
+<a href="javascript:window.location='https://your-site.com/admin/items/new/?media_category=external_url&media_url='+encodeURIComponent(document.location)+'&title='+encodeURIComponent(document.title)">
+  to microfeed
+</a>
+```
+
+## Selecting Content Types
+
+When creating a new item in the admin dashboard, you choose the content type first:
+
+1. Navigate to **Add new item** in the admin dashboard
+2. Select your content type (audio, video, image, document, or external URL)
+3. Upload your file or enter the external URL
+4. Add title, description, and other metadata
+5. Publish to your feed
+
+<Tip>
+You can change the content type before publishing, but switching types after uploading a file will discard the current file.
+</Tip>
+
+## Content Type Constants
+
+The content types are defined in the source code as:
+
+```javascript
+export const ENCLOSURE_CATEGORIES = {
+  AUDIO: 'audio',
+  DOCUMENT: 'document',
+  VIDEO: 'video',
+  IMAGE: 'image',
+  EXTERNAL_URL: 'external_url',
+};
+```
+
+From `common-src/Constants.js:137-143`
+
+## Real-World Examples
+
+- **Podcast feed:** [llamacorn.listennotes.com](https://llamacorn.listennotes.com/) - Audio content
+- **Photo gallery:** Brand assets and images
+- **Link collection:** [wenbin.org](https://www.wenbin.org/) - Personal website with curated links
+- **Marketing site:** [microfeed.org](https://www.microfeed.org/) - Mixed content types
+- **Changelog:** [changelog.listennotes.com](https://changelog.listennotes.com/) - Blog posts and updates
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Media Management" href="/features/media-management">
+    Learn how to upload and manage media files on R2
+  </Card>
+  <Card title="Admin Dashboard" href="/features/admin-dashboard">
+    Explore the admin interface for managing content
+  </Card>
+</CardGroup>

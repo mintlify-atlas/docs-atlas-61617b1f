@@ -1,0 +1,442 @@
+---
+title: Media Management
+description: Upload, host, and manage media files with Cloudflare R2 storage
+---
+
+microfeed uses [Cloudflare R2](https://www.cloudflare.com/products/r2/) to host and serve all media files, including audio, video, images, and documents. R2 provides S3-compatible object storage with zero egress fees, making it perfect for hosting podcast episodes and large media files.
+
+## How Media Storage Works
+
+<CardGroup cols={2}>
+  <Card title="Cloudflare R2" icon="cloud">
+    Object storage with S3-compatible API
+  </Card>
+  <Card title="Zero Egress Fees" icon="dollar-sign">
+    No charges for bandwidth or downloads
+  </Card>
+  <Card title="Global CDN" icon="globe">
+    Fast delivery worldwide
+  </Card>
+  <Card title="Automatic Upload" icon="upload">
+    Drag-and-drop file upload from admin
+  </Card>
+</CardGroup>
+
+## R2 Setup
+
+During installation, you configure R2 access with these credentials:
+
+- **R2_ACCESS_KEY_ID** - API access key
+- **R2_SECRET_ACCESS_KEY** - API secret key
+- **R2 Bucket Name** - Your storage bucket (e.g., `microfeed-media`)
+- **Public Bucket URL** - CDN URL for serving files (e.g., `https://media-cdn.microfeed.org`)
+
+<Info>
+Cloudflare R2 includes a generous free tier: 10GB storage + 10 million reads/month + 1 million writes/month.
+</Info>
+
+## File Upload Process
+
+### From Admin Dashboard
+
+1. Navigate to **Add new item** in the admin dashboard
+2. Select content type (audio, video, image, or document)
+3. Drag and drop your file or click to browse
+4. File uploads automatically to R2
+5. Progress indicator shows upload status
+6. Metadata (duration, file size) is extracted automatically
+
+### Upload Implementation
+
+The upload process uses presigned URLs for secure, direct uploads to R2:
+
+```javascript
+onFileUpload(file) {
+  const {category} = this.state;
+  this.setState({uploadStatus: UPLOAD_STATUS__START});
+  
+  const {name, size, type} = file;
+  const extension = name.slice((name.lastIndexOf('.') - 1 >>> 0) + 2);
+  let newFilename = `${category}-${randomHex(32)}`;
+  if (extension && extension.length > 0) {
+    newFilename += `.${extension}`;
+  }
+  const cdnFilename = `media/${newFilename}`;
+
+  Requests.upload(file, cdnFilename, (percentage) => {
+    this.setState({progressText: `${parseFloat(percentage * 100.0).toFixed(2)}%`});
+  }, (cdnUrl) => {
+    this.setState({
+      progressText: null,
+      uploadStatus: null,
+      url: cdnUrl,
+      contentType: type,
+      sizeByte: size,
+    });
+  });
+}
+```
+
+From `client-src/ClientAdminItemsApp/components/EditItemApp/components/MediaManager/index.jsx:176-228`
+
+## File Naming Convention
+
+Uploaded files are automatically renamed with a secure pattern:
+
+```
+media/{content-type}-{random-hex-32}.{extension}
+```
+
+Examples:
+- `media/audio-abc123def456789.mp3`
+- `media/video-xyz789abc123456.mp4`
+- `media/image-def456ghi789012.jpg`
+- `media/document-ghi012jkl345678.pdf`
+
+<Tip>
+The random hex prefix prevents filename collisions and makes URLs unpredictable for better security.
+</Tip>
+
+## Supported File Types
+
+<Tabs>
+  <Tab title="Audio">
+    **Audio Files**
+    - MP3 (audio/mpeg)
+    - M4B (audio/x-m4b)
+    - FLAC (audio/flac)
+    
+    ```javascript
+    [ENCLOSURE_CATEGORIES.AUDIO]: {
+      name: 'audio',
+      fileTypes: ['mp3', 'm4b', 'flac'],
+    }
+    ```
+  </Tab>
+  <Tab title="Video">
+    **Video Files**
+    - MP4 (video/mp4)
+    
+    ```javascript
+    [ENCLOSURE_CATEGORIES.VIDEO]: {
+      name: 'video',
+      fileTypes: ['mp4'],
+    }
+    ```
+  </Tab>
+  <Tab title="Images">
+    **Image Files**
+    - PNG (image/png)
+    - JPG/JPEG (image/jpeg)
+    - GIF (image/gif)
+    - HEIC (image/heic)
+    - CR2 (image/x-canon-cr2)
+    
+    ```javascript
+    [ENCLOSURE_CATEGORIES.IMAGE]: {
+      name: 'image',
+      fileTypes: ['png', 'jpg', 'jpeg', 'gif', 'heic', 'cr2'],
+    }
+    ```
+  </Tab>
+  <Tab title="Documents">
+    **Document Files**
+    - PDF (application/pdf)
+    - DOCX (application/vnd.openxmlformats-officedocument.wordprocessingml.document)
+    - DOC (application/msword)
+    - XLSX (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet)
+    - PPT (application/vnd.ms-powerpoint)
+    - PPTX (application/vnd.openxmlformats-officedocument.presentationml.presentation)
+    - TXT (text/plain)
+    
+    ```javascript
+    [ENCLOSURE_CATEGORIES.DOCUMENT]: {
+      name: 'document',
+      fileTypes: ['pdf', 'docx', 'doc', 'xlsx', 'ppt', 'pptx', 'txt'],
+    }
+    ```
+  </Tab>
+</Tabs>
+
+From `common-src/Constants.js:144-165`
+
+## Metadata Extraction
+
+### Audio and Video Duration
+
+When you upload audio or video files, microfeed automatically extracts the duration:
+
+```javascript
+updateDuration={(e) => {
+  try {
+    const newDurationSecond = parseInt(e.target.duration, 10);
+    if (newDurationSecond > 0) {
+      this.setState({
+        durationSecond: newDurationSecond,
+      }, () => {
+        this.props.onMediaFileUpdated({
+          durationSecond: newDurationSecond,
+        });
+      });
+    }
+  } catch (e) { }
+}
+```
+
+From `client-src/ClientAdminItemsApp/components/EditItemApp/components/MediaManager/index.jsx:290-304`
+
+### File Size
+
+File size is captured automatically during upload:
+
+```javascript
+const {name, size, type} = file;
+// size is in bytes
+```
+
+<Info>
+File sizes are displayed in human-readable format (KB, MB, GB) in the admin dashboard.
+</Info>
+
+## Media Preview
+
+The admin dashboard shows previews of uploaded media:
+
+### Audio Preview
+
+```jsx
+{category === ENCLOSURE_CATEGORIES.AUDIO && <div>
+  <audio controls preload="metadata" ref={setRef} onLoadedMetadata={updateDuration}>
+    <source src={url} type={contentType}/>
+    Your browser does not support the audio element.
+  </audio>
+</div>}
+```
+
+### Video Preview
+
+```jsx
+{category === ENCLOSURE_CATEGORIES.VIDEO && <div>
+  <video width="80%" preload="metadata" controls ref={setRef} onLoadedMetadata={updateDuration}>
+    <source src={url} type={contentType} />
+    Your browser does not support the video tag.
+  </video>
+</div>}
+```
+
+### Image Preview
+
+```jsx
+{category === ENCLOSURE_CATEGORIES.IMAGE && <div>
+  <img src={url} alt={contentType} width="80%" />
+</div>}
+```
+
+From `client-src/ClientAdminItemsApp/components/EditItemApp/components/MediaManager/index.jsx:25-60`
+
+## CDN Configuration
+
+To serve files from R2, you need to configure a public bucket URL:
+
+1. Create a custom subdomain (e.g., `media.your-site.com`)
+2. Point it to your R2 bucket using Cloudflare DNS
+3. Configure R2 public access
+4. Set the **Public Bucket URL** in Settings > Web Global Settings
+
+### URL Structure
+
+Media URLs follow this pattern:
+
+```
+https://media-cdn.microfeed.org/media/audio-abc123def456.mp3
+         ↑                        ↑
+    Public Bucket URL          File Path
+```
+
+The URL builder concatenates these:
+
+```javascript
+if (item.image) {
+  item.image = urlJoinWithRelative(this.publicBucketUrl, item.image);
+}
+```
+
+From `edge-src/models/FeedPublicJsonBuilder.js:36-38`
+
+## Tracking URLs
+
+For analytics and download tracking, you can prepend tracking URLs to media files:
+
+### Configure Tracking
+
+In **Settings > Tracking URLs**, add third-party tracking services:
+
+```
+https://op3.dev/e/
+https://dts.podtrac.com/redirect.mp3/
+```
+
+### How Tracking Works
+
+Tracking URLs are prepended to media URLs in RSS and JSON feeds:
+
+```javascript
+if (mediaFile.url) {
+  attachment['url'] = buildAudioUrlWithTracking(mediaFile.url, trackingUrls);
+}
+```
+
+From `edge-src/models/FeedPublicJsonBuilder.js:212-213`
+
+**Original URL:**
+```
+https://media.your-site.com/media/audio-abc123.mp3
+```
+
+**With Tracking:**
+```
+https://op3.dev/e/https://dts.podtrac.com/redirect.mp3/https://media.your-site.com/media/audio-abc123.mp3
+```
+
+<Note>
+Tracking URLs are a standard practice in the podcast industry for monitoring downloads and analytics.
+</Note>
+
+## File Management Features
+
+### Replace Media File
+
+You can replace an existing media file:
+
+1. Open the item in edit mode
+2. Expand "Upload a new file to replace this one"
+3. Upload the new file
+4. Previous file remains in R2 but is no longer referenced
+
+<Warning>
+Replacing a file does not delete the old file from R2. You'll need to manually clean up unused files if storage becomes an issue.
+</Warning>
+
+### Delete Media File
+
+To remove media from an item:
+
+1. Change the content type (e.g., from audio to blog post)
+2. Confirm the deletion
+3. The media file reference is removed
+4. File remains in R2 storage
+
+### Download URLs
+
+All media files are accessible via direct download URLs shown in the admin dashboard:
+
+```html
+<a href="https://media.your-site.com/media/audio-abc123.mp3" target="_blank">
+  Download URL
+</a>
+```
+
+## R2 Storage Limits
+
+### Free Tier
+
+- **Storage:** 10 GB
+- **Class A Operations:** 1 million/month (writes)
+- **Class B Operations:** 10 million/month (reads)
+
+### Paid Tier (when exceeded)
+
+- **Storage:** $0.015 per GB/month
+- **Class A Operations:** $4.50 per million
+- **Class B Operations:** $0.36 per million
+- **Egress:** $0.00 (always free)
+
+<Tip>
+R2's zero egress fees make it ideal for podcasts and video hosting, where bandwidth costs can be significant with other providers.
+</Tip>
+
+## Backup and Data Export
+
+To backup your media files from R2:
+
+### Using S3-Compatible Tools
+
+R2 is S3-compatible, so you can use tools like:
+
+- AWS CLI with R2 endpoint
+- rclone
+- Cyberduck
+- s3cmd
+
+### Example with AWS CLI
+
+```bash
+# Configure AWS CLI with R2 credentials
+aws configure --profile r2
+
+# Sync R2 bucket to local directory
+aws s3 sync \
+  s3://your-bucket-name \
+  ./local-backup \
+  --endpoint-url https://[account-id].r2.cloudflarestorage.com \
+  --profile r2
+```
+
+<Info>
+See the [Cloudflare R2 documentation](https://developers.cloudflare.com/r2/data-access/s3-api/) for S3 API details.
+</Info>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Optimize File Sizes">
+    Compress audio and video files before uploading to save storage space and improve download speeds. For podcasts, 64-128 kbps MP3 is usually sufficient.
+  </Accordion>
+  
+  <Accordion title="Use Appropriate Formats">
+    Use MP3 for audio (best compatibility), MP4 for video, and JPEG for photos. Avoid exotic formats that may not work in all players.
+  </Accordion>
+  
+  <Accordion title="Set Up Custom Domain">
+    Use a custom subdomain (e.g., `media.your-site.com`) instead of the default R2 URL for better branding and portability.
+  </Accordion>
+  
+  <Accordion title="Monitor Storage Usage">
+    Keep track of your R2 storage usage in the Cloudflare dashboard to avoid unexpected charges.
+  </Accordion>
+  
+  <Accordion title="Regular Backups">
+    Periodically backup your R2 bucket using S3-compatible tools to protect against accidental deletions.
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+### Upload Fails
+
+- Check R2 credentials in GitHub secrets
+- Verify R2 bucket exists and has correct permissions
+- Ensure file size is within R2 limits (max 5TB per object)
+
+### Files Not Accessible
+
+- Verify Public Bucket URL is configured correctly
+- Check R2 bucket has public access enabled
+- Confirm custom domain DNS is pointing to R2
+
+### Slow Downloads
+
+- Enable Cloudflare CDN caching for your R2 bucket
+- Use a custom domain with Cloudflare proxy enabled
+- Compress media files to reduce size
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Content Types" href="/features/content-types">
+    Learn about supported media formats
+  </Card>
+  <Card title="Admin Dashboard" href="/features/admin-dashboard">
+    Explore the file upload interface
+  </Card>
+</CardGroup>

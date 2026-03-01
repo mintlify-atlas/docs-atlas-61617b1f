@@ -1,0 +1,107 @@
+---
+title: 'API Overview'
+description: 'Learn how to use microfeed as a headless CMS and integrate with external services'
+---
+
+## Introduction
+
+microfeed provides a comprehensive API that allows you to use it as a headless CMS or integrate with external services like Zapier. You can programmatically create, update, and delete items, as well as manage your channel metadata.
+
+## API Types
+
+microfeed offers two distinct API types to serve different use cases:
+
+<CardGroup cols={2}>
+  <Card title="Feed API" icon="rss" href="#feed-api">
+    Public, read-only endpoints for fetching content
+  </Card>
+  <Card title="Admin API" icon="lock" href="#admin-api">
+    Authenticated endpoints for full CRUD operations
+  </Card>
+</CardGroup>
+
+### Feed API
+
+The Feed API provides read-only access to your microfeed content. These endpoints are public and don't require authentication, making them perfect for:
+
+- Displaying your feed on external websites
+- Building custom frontends
+- Syndicating content to other platforms
+- Creating RSS readers or aggregators
+
+<Note>
+  Feed API endpoints can be disabled in your admin settings at `/admin/settings/` by toggling the "Visible" option for "JSON" in the "Subscribe methods" section.
+</Note>
+
+**Available endpoints:**
+- `GET /json` - Fetch the complete feed with channel metadata and items
+- `GET /i/{id}/json` - Fetch a single item by ID
+
+### Admin API
+
+The Admin API provides full control over your microfeed instance. These endpoints require authentication and enable you to:
+
+- Create, update, and delete items
+- Update channel metadata
+- Upload media files to R2 storage
+- Manage your content programmatically
+
+<Note>
+  All Admin API endpoints require authentication using an API key. Learn more in the [Authentication](/api/authentication) guide.
+</Note>
+
+**Available endpoints:**
+- `PUT /api/channels/primary/` - Update channel metadata
+- `POST /api/items/` - Create a new item
+- `PUT /api/items/{id}/` - Update an existing item
+- `DELETE /api/items/{id}/` - Delete an item
+- `GET /api/items/{id}/` - Fetch an item (authenticated version)
+- `GET /api/feed/` - Fetch the feed (authenticated version)
+- `POST /api/media_files/presigned_urls/` - Get presigned URL for uploading media files
+
+## Base URL
+
+All API requests are made to your microfeed instance URL. The base URL format is:
+
+```
+https://your-microfeed-instance.com
+```
+
+For example, if your microfeed is hosted at `https://podcast.example.com`, your API endpoints would be:
+
+- Feed API: `https://podcast.example.com/json`
+- Admin API: `https://podcast.example.com/api/items/`
+
+## Response Format
+
+All API responses follow the [JSON Feed format (version 1.1)](https://www.jsonfeed.org/version/1.1/) for feed and item data. This standardized format ensures compatibility with a wide range of feed readers and tools.
+
+The response includes:
+- Standard JSON Feed fields (title, description, items, etc.)
+- microfeed-specific extensions under the `_microfeed` field
+- Support for various content types (audio, video, images, documents, external URLs)
+
+## Use Cases
+
+Here are some common scenarios where the microfeed API shines:
+
+<CardGroup cols={2}>
+  <Card title="Headless CMS" icon="server">
+    Use microfeed as a backend for your custom website or mobile app
+  </Card>
+  <Card title="Automation" icon="robot">
+    Integrate with Zapier, IFTTT, or custom scripts to automate content publishing
+  </Card>
+  <Card title="Multi-platform Publishing" icon="share-nodes">
+    Publish content to multiple platforms simultaneously
+  </Card>
+  <Card title="Custom Integrations" icon="plug">
+    Build custom tools and integrations for your workflow
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<Card title="Authentication" icon="key" href="/api/authentication">
+  Learn how to authenticate your API requests
+</Card>

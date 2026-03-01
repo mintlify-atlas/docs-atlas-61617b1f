@@ -1,0 +1,241 @@
+---
+title: Settings management
+description: Configure your microfeed instance through the admin dashboard
+---
+
+The Settings page in your admin dashboard provides centralized control over your microfeed instance configuration. Access it at `/admin/settings/` to manage tracking, access control, subscribe methods, web settings, custom code, and API access.
+
+## Overview
+
+Settings are organized into six categories:
+
+- **Tracking URLs** - Configure third-party media tracking services
+- **Access Control** - Manage public/offline site status
+- **Subscribe Methods** - Customize subscription options for your audience
+- **Web Global Settings** - Configure favicon, CDN URL, and pagination
+- **Custom Code** - Link to the code editor (see [Custom Code](/configuration/custom-code))
+- **API** - Enable and manage API access
+
+All settings are stored in your Cloudflare D1 database and take effect immediately after saving.
+
+## Tracking URLs
+
+Configure third-party tracking URLs to monitor downloads of your media files. This is particularly useful for podcast analytics.
+
+### How it works
+
+microfeed automatically prepends tracking URLs to your media file URLs in RSS and JSON feeds. This is a [common practice in the podcast industry](https://lowerstreet.co/blog/podcast-tracking).
+
+<Accordion title="Example: Using OP3 and Podtrac">
+  If you configure tracking URLs:
+  ```
+  https://op3.dev/e/
+  https://dts.podtrac.com/redirect.mp3/
+  ```
+
+  And your original audio URL is:
+  ```
+  https://example.com/audio.mp3
+  ```
+
+  The final URL in your RSS feed becomes:
+  ```
+  https://op3.dev/e/dts.podtrac.com/redirect.mp3/example.com/audio.mp3
+  ```
+</Accordion>
+
+### Supported services
+
+- [OP3](https://op3.dev/) - Open Podcast Prefix Project (free and open source)
+- [Podtrac](http://analytics.podtrac.com/) - Industry-standard podcast analytics
+- [Chartable](https://chartable.com/) - Spotify-owned podcast analytics
+- Any service that uses prefix-based tracking
+
+### Configuration
+
+1. Navigate to Settings > Tracking URLs
+2. Enter one tracking URL per line
+3. Click Update to save
+
+<Warning>
+  Order matters! URLs are prepended in the order you list them. Place your primary tracking service first.
+</Warning>
+
+For detailed setup instructions, see [Tracking URLs](/configuration/tracking-urls).
+
+## Access Control
+
+Control the visibility of your entire site with three access policies:
+
+### Public
+
+Makes your entire site publicly accessible:
+- All web pages
+- RSS feed at `/rss/`
+- JSON feed at `/json/`
+
+This is the default setting for most sites.
+
+### Offline
+
+Makes your entire site offline:
+- All non-admin pages return 404
+- RSS and JSON feeds are unavailable
+- Admin dashboard remains accessible via Cloudflare Zero Trust
+
+Use this when:
+- Setting up your site before launch
+- Performing maintenance
+- Temporarily hiding content
+
+### Passcode (Coming Soon)
+
+Protect all pages with a passcode. This feature is planned for a future release.
+
+## Subscribe Methods
+
+Customize how your audience can subscribe to your feed. This appears on your public website and in your JSON feed metadata.
+
+### Default methods
+
+- **RSS** - Standard RSS feed (non-editable)
+- **JSON** - JSON Feed format (non-editable)
+
+### Adding platforms
+
+Click "Add new subscribe method" to add podcast platforms:
+
+- Apple Podcasts
+- Spotify
+- Google Podcasts
+- Amazon Music
+- Overcast
+- Pocket Casts
+- Castro
+- Listen Notes
+- Custom platforms
+
+For each method, configure:
+
+<AccordionGroup>
+  <Accordion title="Name">
+    Display name for the platform (e.g., "Apple Podcasts")
+  </Accordion>
+  
+  <Accordion title="URL">
+    Link to your show on that platform
+  </Accordion>
+  
+  <Accordion title="Visible">
+    Toggle to show/hide this option from your public site
+  </Accordion>
+</AccordionGroup>
+
+### Reordering
+
+Use the up/down arrows to reorder subscribe methods. The order determines display order on your site.
+
+## Web Global Settings
+
+Configure global settings that affect your entire website.
+
+### R2 Public Bucket URL
+
+Optional CDN URL for serving media files:
+
+```
+https://media-cdn.microfeed.org
+```
+
+If configured, microfeed serves media files from this domain instead of directly from R2. This is useful for:
+- Custom domain branding
+- CDN optimization
+- Analytics tracking
+
+<Warning>
+  The URL must start with `http://` or `https://`. Do not include a trailing slash.
+</Warning>
+
+### Items Settings
+
+**Items per page**: Control how many items display per page (1-300, default: 20)
+
+**Sort order**: Choose how items are ordered:
+- **Newest first** - Most recent items at the top (default)
+- **Oldest first** - Chronological order from the beginning
+
+These settings affect:
+- Your public web feed
+- RSS feed
+- JSON feed
+- Pagination behavior
+
+### Favicon
+
+Upload a custom favicon for your site:
+
+- Recommended size: 48x48 to 256x256 pixels
+- Supported formats: PNG, JPG, ICO
+- Displays in browser tabs and bookmarks
+
+<Accordion title="Best practices for favicons">
+  - Use a square image
+  - Keep the design simple for small sizes
+  - Use your brand colors
+  - Test at 16x16 size (browser tab)
+  - PNG format with transparency works best
+</Accordion>
+
+## API Settings
+
+Enable API access to programmatically manage your feed content.
+
+### Enable API
+
+Toggle "API Enabled" to generate an API key. Use the API to:
+
+- Create new items
+- Update existing items
+- Delete items
+- Fetch feed metadata
+
+### API Key Management
+
+Your API key is displayed in the settings. To use it:
+
+```bash
+curl -H "X-MicrofeedAPI-Key: <YOUR_API_KEY>" \
+  https://your-site.pages.dev/json/
+```
+
+<Warning>
+  Keep your API key secret! Anyone with this key can modify your feed content. Click "Reset" to generate a new key if compromised.
+</Warning>
+
+### Documentation
+
+Access API documentation:
+
+- **Interactive docs**: `/json/openapi.html`
+- **OpenAPI spec**: `/json/openapi.yaml`
+
+The API follows RESTful conventions and returns JSON responses.
+
+## Saving Changes
+
+Each settings section has its own "Update" button:
+
+1. Make your changes in any section
+2. Click the "Update" button for that section
+3. Wait for the success confirmation
+4. Changes take effect immediately
+
+<Warning>
+  You'll see a browser warning if you try to leave the page with unsaved changes.
+</Warning>
+
+## Related Pages
+
+- [Custom Code Editor](/configuration/custom-code) - Customize your site's HTML and CSS
+- [Tracking URLs](/configuration/tracking-urls) - Detailed tracking setup guide
+- [Custom Domains](/configuration/custom-domains) - Configure custom domains

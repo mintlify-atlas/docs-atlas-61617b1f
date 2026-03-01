@@ -14,12 +14,12 @@
 
 ## Terminology
 
-<!-- Add product-specific terms and preferred usage -->
-<!-- Example: Use "workspace" not "project", "member" not "user" -->
+- Use "microfeed instance" not "site" or "installation"
+- Use "feed" not "channel" when referring to the published content
+- Use "admin dashboard" not just "dashboard"
+- Use "Cloudflare Pages" not just "Pages"
 
 ## Style preferences
-
-<!-- Add any project-specific style rules below -->
 
 - Use active voice and second person ("you")
 - Keep sentences concise — one idea per sentence
@@ -29,5 +29,7 @@
 
 ## Content boundaries
 
-<!-- Define what should and shouldn't be documented -->
-<!-- Example: Don't document internal admin features -->
+- Focus on user-facing features and workflows
+- Document both the admin dashboard and public-facing feeds
+- Include API documentation for developers using microfeed as a headless CMS
+- Cover deployment and configuration on Cloudflare

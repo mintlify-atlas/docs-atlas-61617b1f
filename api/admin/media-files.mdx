@@ -1,0 +1,248 @@
+---
+title: 'Media Files API'
+description: 'Upload media files (audio, video, images, documents) to Cloudflare R2 storage'
+---
+
+<Warning>
+  All Admin API endpoints require authentication using your API key. You can find your API key in the API section of your microfeed settings at `/admin/settings/`.
+</Warning>
+
+## Upload Media Files
+
+Microfeed uses a two-step process to upload media files to Cloudflare R2:
+
+1. **Get a presigned URL** - Request a time-limited upload URL from microfeed
+2. **Upload the file** - Use the presigned URL to upload your file directly to R2
+
+This approach is secure and efficient, allowing direct uploads to cloud storage without routing files through your application server.
+
+---
+
+## Create Presigned URL
+
+### `POST /api/media_files/presigned_urls/`
+
+Generate a presigned URL for uploading a media file to Cloudflare R2 storage.
+
+#### Authentication
+
+<ParamField header="X-MicrofeedAPI-Key" type="string" required>
+  Your microfeed instance's API key. Find it at `/admin/settings/` in the API section.
+</ParamField>
+
+#### Request Body
+
+<ParamField body="category" type="string" required>
+  The media file category. Must be one of:
+  - `image` - PNG, JPG, JPEG, GIF, HEIC, CR2
+  - `audio` - MP3, M4B, FLAC
+  - `video` - MP4
+  - `document` - PDF, DOCX, DOC, XLSX, PPT, PPTX, TXT
+</ParamField>
+
+<ParamField body="full_local_file_path" type="string" required>
+  The full local file path of the media file to be uploaded (e.g., `/tmp/episode1.mp3`). This is used to extract the file extension for proper naming in R2.
+</ParamField>
+
+<ParamField body="item_id" type="string">
+  The ID of the item this media file belongs to. Required for `audio`, `video`, and `document` categories. Optional for `image` category (omit when uploading channel icons or item cover images).
+</ParamField>
+
+#### Response
+
+<ResponseField name="presigned_url" type="string">
+  The presigned URL for uploading the file to R2. Valid for 60 minutes. Use this URL with a `PUT` request to upload your file.
+</ResponseField>
+
+<ResponseField name="media_url" type="string">
+  The permanent URL where the file will be accessible after upload. Use this URL when updating:
+  - Channel `icon` via `PUT /api/channels/primary/`
+  - Item `image` or `attachment.url` via `POST/PUT /api/items/`
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message if the request failed.
+</ResponseField>
+
+#### Example Request
+
+```bash
+curl -X POST https://your-instance.microfeed.org/api/media_files/presigned_urls/ \
+  -H "Content-Type: application/json" \
+  -H "X-MicrofeedAPI-Key: your-api-key-here" \
+  -d '{
+    "item_id": "GOwipulXxh9",
+    "category": "audio",
+    "full_local_file_path": "/Users/john/podcast/episode-01.mp3"
+  }'
+```
+
+#### Example Response
+
+```json
+{
+  "presigned_url": "https://your-r2-bucket.com/upload-url-with-signature",
+  "media_url": "https://media-cdn.example.com/media/audio-1f7e6bdb428ee91c298dfe1bc399fd23.mp3"
+}
+```
+
+#### Error Responses
+
+**400 Bad Request - Missing Parameters**
+```json
+{
+  "error": "You have to provide json input params: {\"category\": \"image\", \"full_local_file_path\": \"/tmp/1.png\"}, where category is one of: image, audio, video, and document"
+}
+```
+
+**400 Bad Request - Invalid Category**
+```json
+{
+  "error": "Invalid category: pdf. Category must be one of: image, audio, video, document"
+}
+```
+
+**400 Bad Request - Missing File Path**
+```json
+{
+  "error": "You have to provide full_local_file_path, e.g., /tmp/1.png"
+}
+```
+
+**400 Bad Request - Missing Item ID**
+```json
+{
+  "error": "You have to provide item_id for non-image categories, e.g., {\"item_id\": \"3a0ydRs15gZ\", \"category\": \"audio\", \"full_local_file_path\": \"$FULL_LOCAL_FILE_PATH\"}"
+}
+```
+
+**401 Unauthorized**
+```json
+{
+  "error": "Invalid api key"
+}
+```
+
+---
+
+## Complete Upload Workflow
+
+Here's a complete example of uploading an audio file and creating an item with it:
+
+### Step 1: Get Presigned URL
+
+```bash
+# Request presigned URL for audio file
+curl -X POST https://your-instance.microfeed.org/api/media_files/presigned_urls/ \
+  -H "Content-Type: application/json" \
+  -H "X-MicrofeedAPI-Key: your-api-key-here" \
+  -d '{
+    "item_id": "temp123",
+    "category": "audio",
+    "full_local_file_path": "/Users/john/podcast/episode-01.mp3"
+  }'
+
+# Response:
+# {
+#   "presigned_url": "https://r2-upload-url...",
+#   "media_url": "https://media-cdn.example.com/media/audio-abc123.mp3"
+# }
+```
+
+### Step 2: Upload File to R2
+
+```bash
+# Upload file using presigned URL
+curl -X PUT \
+  -T /Users/john/podcast/episode-01.mp3 \
+  "https://r2-upload-url..."
+
+# Response: 200 OK (empty body)
+```
+
+### Step 3: Create Item with Media URL
+
+```bash
+# Create item using the media_url from Step 1
+curl -X POST https://your-instance.microfeed.org/api/items/ \
+  -H "Content-Type: application/json" \
+  -H "X-MicrofeedAPI-Key: your-api-key-here" \
+  -d '{
+    "title": "Episode 1: Getting Started",
+    "status": "published",
+    "content_html": "<p>Our first episode!</p>",
+    "attachment": {
+      "category": "audio",
+      "url": "https://media-cdn.example.com/media/audio-abc123.mp3",
+      "mime_type": "audio/mpeg",
+      "size_in_bytes": 15728640,
+      "duration_in_seconds": 1845
+    }
+  }'
+```
+
+---
+
+## Uploading Channel Icons
+
+For channel icons or item cover images (no specific item association), omit the `item_id` parameter:
+
+```bash
+curl -X POST https://your-instance.microfeed.org/api/media_files/presigned_urls/ \
+  -H "Content-Type: application/json" \
+  -H "X-MicrofeedAPI-Key: your-api-key-here" \
+  -d '{
+    "category": "image",
+    "full_local_file_path": "/Users/john/artwork/podcast-cover.png"
+  }'
+```
+
+Then upload the file and use the `media_url` in your channel update:
+
+```bash
+curl -X PUT https://your-instance.microfeed.org/api/channels/primary/ \
+  -H "Content-Type: application/json" \
+  -H "X-MicrofeedAPI-Key: your-api-key-here" \
+  -d '{
+    "icon": "https://media-cdn.example.com/images/channel-xyz789.png"
+  }'
+```
+
+---
+
+## Supported File Types
+
+### Image
+- PNG (`.png`)
+- JPEG (`.jpg`, `.jpeg`)
+- GIF (`.gif`)
+- HEIC (`.heic`)
+- RAW (`.cr2`)
+
+### Audio
+- MP3 (`.mp3`)
+- M4B (`.m4b`)
+- FLAC (`.flac`)
+
+### Video
+- MP4 (`.mp4`)
+
+### Document
+- PDF (`.pdf`)
+- Word (`.docx`, `.doc`)
+- Excel (`.xlsx`)
+- PowerPoint (`.ppt`, `.pptx`)
+- Text (`.txt`)
+
+<Note>
+  The presigned URL is valid for 60 minutes. Complete your upload within this timeframe. The `media_url` becomes accessible immediately after a successful upload.
+</Note>
+
+<Warning>
+  For podcast cover art, Apple Podcasts requires:
+  - Minimum size: 1400 x 1400 pixels
+  - Maximum size: 3000 x 3000 pixels
+  - Format: JPEG or PNG
+  - Resolution: 72 dpi
+  - Color space: RGB
+</Warning>

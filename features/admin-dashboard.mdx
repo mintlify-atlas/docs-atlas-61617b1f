@@ -1,0 +1,304 @@
+---
+title: Admin Dashboard
+description: Manage your microfeed content through an intuitive web interface
+---
+
+The microfeed admin dashboard provides a complete GUI for managing your content, customizing your site, and monitoring your feed. If you've used WordPress, you'll find the interface familiar and intuitive.
+
+## Accessing the Admin Dashboard
+
+Your admin dashboard is located at:
+
+```
+https://your-project-name.pages.dev/admin/
+```
+
+<Warning>
+The admin dashboard must be protected by Cloudflare Zero Trust. You'll configure this during the initial setup process.
+</Warning>
+
+## Dashboard Overview
+
+<CardGroup cols={2}>
+  <Card title="Home" icon="house">
+    View setup checklist, distribution links, and what's new
+  </Card>
+  <Card title="Edit Channel" icon="pen-to-square">
+    Configure your feed's title, description, and metadata
+  </Card>
+  <Card title="Add New Item" icon="plus">
+    Create and publish new content to your feed
+  </Card>
+  <Card title="All Items" icon="list">
+    Browse, edit, and manage all published and unpublished items
+  </Card>
+  <Card title="Settings" icon="gear">
+    Customize appearance, tracking, and advanced options
+  </Card>
+</CardGroup>
+
+## Navigation
+
+The admin dashboard uses a consistent navigation structure defined in the source code:
+
+```javascript
+export const NAV_ITEMS_DICT = {
+  [NAV_ITEMS.ADMIN_HOME]: {
+    name: 'Home',
+  },
+  [NAV_ITEMS.EDIT_CHANNEL]: {
+    name: 'Edit channel',
+  },
+  [NAV_ITEMS.NEW_ITEM]: {
+    name: 'Add new item',
+  },
+  [NAV_ITEMS.ALL_ITEMS]: {
+    name: 'See all items',
+  },
+  [NAV_ITEMS.SETTINGS]: {
+    name: 'Settings',
+  },
+};
+```
+
+From `common-src/Constants.js:183-199`
+
+## Admin Home
+
+The home screen displays three key sections:
+
+### Setup Checklist
+
+When you first access the admin dashboard, you'll see a checklist to complete the setup:
+
+1. **Valid Public Bucket URL** - Configure R2 media hosting
+2. **Protected Admin Dashboard** - Secure with Cloudflare Zero Trust
+3. **Custom Domain** - Add your own domain name
+
+<Info>
+The setup checklist automatically disappears once all items are completed.
+</Info>
+
+### Distribution Links
+
+Quick access to your public-facing URLs:
+
+- Web feed homepage
+- RSS feed
+- JSON feed
+- OpenAPI documentation
+
+### What's New
+
+Stay updated with the latest microfeed features and announcements.
+
+## Creating Content
+
+### Add New Item Workflow
+
+1. **Select Content Type**
+   Choose from audio, video, image, document, blog post, or external URL
+
+2. **Upload or Link Media**
+   - Drag and drop files for upload
+   - Enter URLs for external links
+   - Files are automatically uploaded to Cloudflare R2
+
+3. **Add Metadata**
+   - **Title** (required)
+   - **Description** with rich text editor
+   - **Cover image** (optional)
+   - **Publication date** with datetime picker
+   - **Custom link** (optional external URL)
+
+4. **Configure Podcast Settings** (for audio content)
+   - Episode number
+   - Season number
+   - Episode type (full, trailer, bonus)
+   - Explicit content flag
+
+5. **Set Publication Status**
+   - **Published:** Listed on web/RSS/JSON feeds, visible via direct link
+   - **Unpublished:** Not listed, not visible
+   - **Unlisted:** Not listed, but visible via direct link
+
+6. **Save and Publish**
+
+<Tabs>
+  <Tab title="Publication Statuses">
+    ```javascript
+    export const ITEM_STATUSES_DICT = {
+      [STATUSES.PUBLISHED]: {
+        name: 'published',
+        description: 'listed on the web/rss/json feed, and visible via the direct web link.',
+      },
+      [STATUSES.UNPUBLISHED]: {
+        name: 'unpublished',
+        description: 'not listed on the web/rss/json feed, and not visible via the direct web link.'
+      },
+      [STATUSES.UNLISTED]: {
+        name: 'unlisted',
+        description: 'not listed on the web/rss/json feed, but visible via the direct web link.'
+      },
+    };
+    ```
+    From `common-src/Constants.js:234-248`
+  </Tab>
+  <Tab title="Use Cases">
+    - **Published:** Regular content for your audience
+    - **Unpublished:** Drafts and content being prepared
+    - **Unlisted:** Private links, patron-only content, hidden pages
+  </Tab>
+</Tabs>
+
+## Managing Items
+
+The **All Items** page provides a list view of all your content:
+
+- Filter by publication status
+- Search by title
+- Sort by publication date
+- Quick edit and delete actions
+- Batch operations
+
+<Tip>
+Changes to items are immediately reflected in your RSS, JSON, and web feeds.
+</Tip>
+
+## Edit Channel
+
+Configure your feed's global settings:
+
+### Basic Information
+- **Title:** Your feed name
+- **Description:** Rich HTML description of your feed
+- **Publisher:** Author/creator name
+- **Link:** Homepage URL
+- **Language:** Content language code
+- **Cover Image:** Feed artwork (recommended: 3000x3000px)
+
+### Podcast Settings
+- **iTunes Category:** Primary and subcategory
+- **Podcast Type:** Episodic or serial
+- **Explicit Content:** Flag for mature content
+- **Copyright:** Copyright notice
+- **Owner Email:** Contact email for podcast directories
+
+### Advanced Settings
+- **Block from iTunes:** Prevent indexing
+- **Mark as Complete:** Indicate no new episodes
+- **New Feed URL:** Redirect subscribers to new feed
+
+## Settings Pages
+
+### Subscribe Methods
+
+Configure where listeners can subscribe to your feed:
+
+- Apple Podcasts
+- Spotify
+- Google Podcasts
+- Amazon Music
+- Overcast
+- Pocket Casts
+- RSS
+- JSON
+- Custom platforms
+
+Each subscribe method can be enabled/disabled and customized with your specific URL.
+
+### Tracking URLs
+
+Set up third-party tracking for analytics:
+
+```
+https://op3.dev/e/
+https://dts.podtrac.com/redirect.mp3/
+```
+
+Tracking URLs are automatically prepended to media file URLs in RSS and JSON feeds.
+
+<Note>
+This is a common practice in the podcast industry for monitoring download statistics.
+</Note>
+
+### Access Control
+
+Control who can view your feed:
+
+- **Public:** Entire site publicly accessible
+- **Offline:** Site returns 404 for all public pages
+- **Passcode:** Protect all pages with a password
+
+```javascript
+export const CHANNEL_STATUSES = {
+  PUBLIC: 'public',
+  OFFLINE: 'offline',
+  PASSCODE: 'passcode',
+};
+```
+
+From `common-src/Constants.js:201-205`
+
+### Custom Code
+
+Edit HTML/CSS templates directly in the browser. See [Custom Theming](/features/custom-theming) for details.
+
+### API Settings
+
+Configure your JSON feed API:
+
+- Default items per page
+- Maximum items per page
+- Default sort order (newest first or oldest first)
+
+## Admin Interface Architecture
+
+The admin dashboard is built with React and uses client-side rendering:
+
+```javascript
+// Admin apps structure
+- ClientAdminHomeApp       // Dashboard home
+- ClientAdminItemsApp      // Content management
+- ClientAdminChannelApp    // Channel settings
+- ClientAdminSettingsApp   // Global settings
+- ClientAdminCustomCodeEditorApp  // Theme editor
+```
+
+From `client-src/` directory structure
+
+## Real-Time Preview
+
+The admin dashboard provides quick links to preview your changes:
+
+- View live feed
+- Preview individual items
+- Test RSS output
+- Inspect JSON data
+
+<Tip>
+Open the live preview in a separate browser window to see changes as you make them.
+</Tip>
+
+## Browser Compatibility
+
+The admin dashboard works best in modern browsers:
+
+- Chrome/Edge (recommended)
+- Firefox
+- Safari
+
+<Warning>
+You'll see a warning prompt if you try to leave the page with unsaved changes.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Content Types" href="/features/content-types">
+    Learn about the different types of content you can publish
+  </Card>
+  <Card title="Custom Theming" href="/features/custom-theming">
+    Customize your site's appearance with HTML/CSS
+  </Card>
+</CardGroup>

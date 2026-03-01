@@ -1,0 +1,101 @@
+---
+title: Deploy to Cloudflare
+description: Run GitHub Actions to deploy your microfeed instance
+---
+
+With your secrets configured, you can now deploy microfeed to Cloudflare Pages using the automated GitHub Actions workflow.
+
+## Run the deployment workflow
+
+<Steps>
+  <Step title="Navigate to Actions">
+    In your forked repository, go to **Actions → Deploy to Cloudflare Pages**.
+  </Step>
+
+  <Step title="Run the workflow">
+    Click "Run workflow" on the right side of the page.
+
+    ![Run workflow](https://user-images.githubusercontent.com/1719237/205526856-05ea0ff4-703a-4d08-bc7f-4ae2dfc07cfe.png)
+  </Step>
+
+  <Step title="Select deployment environment">
+    Choose the deployment environment:
+    - **production**: For your live site (recommended for first deployment)
+    - **preview**: For testing changes before going live
+
+    Click "Run workflow" to start the deployment.
+  </Step>
+
+  <Step title="Monitor the deployment">
+    Watch the workflow progress. The deployment typically takes 2-5 minutes.
+  </Step>
+
+  <Step title="Verify success">
+    When the workflow completes successfully, you'll see a green checkmark next to the workflow run.
+  </Step>
+</Steps>
+
+## What the workflow does
+
+The GitHub Actions workflow automatically:
+
+1. Checks out your code
+2. Sets up Node.js and installs dependencies
+3. Creates necessary Cloudflare resources:
+   - A D1 database for storing metadata
+   - An R2 bucket for media files
+   - A Pages project for hosting the application
+4. Builds the client-side code using webpack
+5. Deploys everything to Cloudflare Pages
+
+<Info>
+The workflow uses the secrets you configured to authenticate with Cloudflare and set up all required resources automatically.
+</Info>
+
+## Accessing your site
+
+After successful deployment:
+
+<Steps>
+  <Step title="Find your Pages project">
+    Go to your [Cloudflare dashboard](https://dash.cloudflare.com) and navigate to **Pages**.
+
+    ![Pages dashboard](https://user-images.githubusercontent.com/1719237/205527141-277620dd-586b-42dd-be97-edb7875d0705.png)
+  </Step>
+
+  <Step title="Access via pages.dev URL">
+    Your site is now live at:
+    ```
+    https://${CLOUDFLARE_PROJECT_NAME}.pages.dev
+    ```
+
+    For example: [https://microfeed-org.pages.dev/](https://microfeed-org.pages.dev/)
+  </Step>
+
+  <Step title="Test the public site">
+    Visit your pages.dev URL to confirm the site is working. You should see your empty microfeed ready for content.
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+### Workflow fails
+
+If the deployment workflow fails:
+
+- Check that all five secrets are correctly configured
+- Verify that your Cloudflare API token has the correct permissions
+- Review the workflow logs for specific error messages
+- Ensure your `CLOUDFLARE_PROJECT_NAME` doesn't contain invalid characters
+
+### Can't access the site
+
+If your pages.dev URL doesn't load:
+
+- Wait a few minutes for DNS propagation
+- Check that the workflow completed successfully
+- Verify the Pages project exists in your Cloudflare dashboard
+
+## What's next
+
+Now that your microfeed instance is deployed, you need to complete the Cloudflare dashboard setup to configure your custom domain and protect your admin dashboard.

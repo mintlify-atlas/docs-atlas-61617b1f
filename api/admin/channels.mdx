@@ -1,0 +1,145 @@
+---
+title: 'Channels API'
+description: 'Update channel metadata including title, description, icon, and podcast-specific settings'
+---
+
+## Update Channel
+
+<Warning>
+  All Admin API endpoints require authentication using your API key. You can find your API key in the API section of your microfeed settings at `/admin/settings/`.
+</Warning>
+
+### `PUT /api/channels/primary/`
+
+Update the primary channel's metadata including title, description, icon, authors, language, and podcast-specific settings.
+
+#### Authentication
+
+<ParamField header="X-MicrofeedAPI-Key" type="string" required>
+  Your microfeed instance's API key. Find it at `/admin/settings/` in the API section.
+</ParamField>
+
+#### Request Body
+
+<ParamField body="title" type="string">
+  The channel's title. For podcasts, this is the podcast name (e.g., "The Daily"). For blogs, this is the blog site's name (e.g., "TechCrunch").
+</ParamField>
+
+<ParamField body="homepage_url" type="string">
+  The channel's website URL.
+</ParamField>
+
+<ParamField body="description" type="string">
+  The channel's description in HTML format. For podcasts, maximum 4000 characters (Apple Podcasts requirement). For blogs, unlimited length.
+</ParamField>
+
+<ParamField body="icon" type="string">
+  The channel's cover image URL. For podcasts, must be 1400x1400 to 3000x3000 pixels, JPEG or PNG, 72 dpi, RGB colorspace (Apple Podcasts requirement). Image should be uploaded via `/api/media_files/presigned_urls/` first.
+</ParamField>
+
+<ParamField body="authors" type="array">
+  Array of author/publisher objects. Currently supports up to 1 author.
+  
+  <ParamField body="authors[].name" type="string">
+    The channel's author or publisher name (e.g., "Gimlet Media", "Joe Rogan").
+  </ParamField>
+</ParamField>
+
+<ParamField body="language" type="string">
+  The primary language in RFC 5646 format. Usually a 2-letter ISO 639-1 code, optionally with region (e.g., "en-us").
+</ParamField>
+
+<ParamField body="expired" type="boolean">
+  For podcasts: Set to `true` if you will never publish a new item in the future.
+</ParamField>
+
+<ParamField body="_microfeed" type="object">
+  Data fields not in the jsonfeed.org standard.
+  
+  <ParamField body="_microfeed.itunes:explicit" type="boolean">
+    Podcast parental advisory. `true` displays Explicit graphic, `false` displays Clean graphic in Apple Podcasts.
+  </ParamField>
+  
+  <ParamField body="_microfeed.itunes:title" type="string">
+    Alternative show title specific for Apple Podcasts.
+  </ParamField>
+  
+  <ParamField body="_microfeed.itunes:block" type="boolean">
+    Set to `true` to remove the show from Apple Podcasts directory.
+  </ParamField>
+  
+  <ParamField body="_microfeed.itunes:type" type="string">
+    Show type: `episodic` (default, newest first) or `serial` (oldest first, requires episode numbers).
+  </ParamField>
+  
+  <ParamField body="_microfeed.copyright" type="string">
+    Show copyright details (e.g., "Copyright 2024 John Doe").
+  </ParamField>
+  
+  <ParamField body="_microfeed.itunes:email" type="string">
+    Podcast owner's contact email. Public in RSS feed, required for many podcast platforms.
+  </ParamField>
+</ParamField>
+
+#### Response
+
+<ResponseField name="status" type="number">
+  HTTP status code: `200` for success, `401` for unauthorized, `400` for invalid channel ID.
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message if request failed.
+</ResponseField>
+
+#### Example Request
+
+```bash
+curl -X PUT https://your-instance.microfeed.org/api/channels/primary/ \
+  -H "Content-Type: application/json" \
+  -H "X-MicrofeedAPI-Key: your-api-key-here" \
+  -d '{
+    "title": "My Awesome Podcast",
+    "homepage_url": "https://example.com",
+    "description": "<p>A podcast about awesome things</p>",
+    "icon": "https://media-cdn.example.com/images/channel-abc123.png",
+    "authors": [
+      {
+        "name": "John Doe"
+      }
+    ],
+    "language": "en-us",
+    "expired": false,
+    "_microfeed": {
+      "itunes:explicit": false,
+      "itunes:type": "episodic",
+      "itunes:email": "podcast@example.com",
+      "copyright": "Copyright 2024 John Doe"
+    }
+  }'
+```
+
+#### Example Response
+
+```json
+{}
+```
+
+#### Error Responses
+
+**401 Unauthorized**
+```json
+{
+  "error": "Invalid api key"
+}
+```
+
+**400 Bad Request**
+```json
+{
+  "error": "Invalid channel id"
+}
+```
+
+<Note>
+  Only the `primary` channel is supported. Requests to other channel IDs will return a 400 error.
+</Note>

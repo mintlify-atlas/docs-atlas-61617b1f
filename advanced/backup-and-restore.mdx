@@ -1,0 +1,401 @@
+---
+title: Backup and Restore
+description: Learn how to backup and restore your microfeed data from Cloudflare D1 and R2
+---
+
+Regular backups protect your content from accidental deletion, platform issues, or migration needs. microfeed stores data in two Cloudflare services that you need to backup separately.
+
+## What to Backup
+
+microfeed stores data in two locations:
+
+1. **D1 Database** - SQLite database containing all metadata (channels, items, settings)
+2. **R2 Storage** - Media files (audio, video, images, documents)
+
+You need to backup both to have a complete copy of your microfeed instance.
+
+## Backing Up D1 Database
+
+The D1 database contains all your content metadata. You'll use Wrangler CLI to export it.
+
+### Prerequisites
+
+Install Wrangler if you haven't already:
+
+```bash
+npm install -g wrangler
+```
+
+Authenticate with Cloudflare:
+
+```bash
+wrangler login
+```
+
+### List Your Databases
+
+First, find your database name:
+
+```bash
+wrangler d1 list
+```
+
+You should see output like:
+
+```
+┌──────────────────────────────────────┬──────────┬─────────────┐
+│ Database ID                          │ Name     │ Created     │
+├──────────────────────────────────────┼──────────┼─────────────┤
+│ xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx │ FEED_DB  │ 2024-01-15  │
+└──────────────────────────────────────┴──────────┴─────────────┘
+```
+
+The database is typically named `FEED_DB`.
+
+### Export Database
+
+Export the entire database to a SQL file:
+
+```bash
+wrangler d1 export FEED_DB --output=microfeed-backup-$(date +%Y%m%d).sql
+```
+
+This creates a file like `microfeed-backup-20260301.sql` containing:
+- Complete database schema
+- All table data as SQL INSERT statements
+- Timestamps and metadata
+
+### Export Specific Table
+
+To export only one table:
+
+```bash
+wrangler d1 execute FEED_DB --command "SELECT * FROM items" > items-backup.json
+```
+
+### Verify Backup
+
+Check that your backup file was created:
+
+```bash
+ls -lh microfeed-backup-*.sql
+```
+
+You should see the file size. For reference:
+- Small blog: ~100KB - 1MB
+- Medium podcast: 1MB - 10MB
+- Large site: 10MB+
+
+### Automated Backups
+
+Create a backup script that runs daily:
+
+```bash
+#!/bin/bash
+# backup-microfeed.sh
+
+DATE=$(date +%Y%m%d)
+BACKUP_DIR="$HOME/microfeed-backups"
+
+mkdir -p "$BACKUP_DIR"
+
+# Backup D1 database
+wrangler d1 export FEED_DB --output="$BACKUP_DIR/db-$DATE.sql"
+
+# Keep only last 30 days
+find "$BACKUP_DIR" -name "db-*.sql" -mtime +30 -delete
+
+echo "Backup completed: $BACKUP_DIR/db-$DATE.sql"
+```
+
+Make it executable:
+
+```bash
+chmod +x backup-microfeed.sh
+```
+
+Run it manually:
+
+```bash
+./backup-microfeed.sh
+```
+
+Or schedule it with cron (daily at 2 AM):
+
+```bash
+crontab -e
+```
+
+Add this line:
+
+```
+0 2 * * * /path/to/backup-microfeed.sh
+```
+
+## Backing Up R2 Media Files
+
+R2 stores all media files uploaded to your microfeed. You'll use S3-compatible tools to download them.
+
+### Why R2 Backup is Important
+
+As of February 2023, Cloudflare does not provide a built-in UI to browse or bulk download R2 files. You need to use S3-compatible APIs.
+
+### Using AWS CLI
+
+The AWS CLI works with R2's S3-compatible API.
+
+#### Install AWS CLI
+
+```bash
+# macOS
+brew install awscli
+
+# Linux
+sudo apt-get install awscli
+
+# or use pip
+pip install awscli
+```
+
+#### Configure AWS CLI for R2
+
+Create an AWS profile for R2:
+
+```bash
+aws configure --profile r2
+```
+
+Enter your R2 credentials:
+
+```
+AWS Access Key ID: [your R2_ACCESS_KEY_ID]
+AWS Secret Access Key: [your R2_SECRET_ACCESS_KEY]
+Default region name: auto
+Default output format: json
+```
+
+#### Download All Files
+
+Sync your entire R2 bucket to a local directory:
+
+```bash
+aws s3 sync s3://your-bucket-name ./microfeed-media \
+  --endpoint-url https://[account-id].r2.cloudflarestorage.com \
+  --profile r2
+```
+
+Replace:
+- `your-bucket-name` with your R2 bucket name (from `.vars.toml` or GitHub secrets)
+- `[account-id]` with your Cloudflare account ID
+
+#### List Files
+
+To see what's in your bucket:
+
+```bash
+aws s3 ls s3://your-bucket-name \
+  --endpoint-url https://[account-id].r2.cloudflarestorage.com \
+  --profile r2
+```
+
+### Using rclone
+
+rclone is another powerful tool for syncing cloud storage.
+
+#### Install rclone
+
+```bash
+# macOS
+brew install rclone
+
+# Linux
+curl https://rclone.org/install.sh | sudo bash
+```
+
+#### Configure rclone for R2
+
+```bash
+rclone config
+```
+
+Follow the prompts:
+
+```
+Name: r2
+Type: s3
+Provider: Cloudflare
+access_key_id: [your R2_ACCESS_KEY_ID]
+secret_access_key: [your R2_SECRET_ACCESS_KEY]
+endpoint: https://[account-id].r2.cloudflarestorage.com
+```
+
+#### Sync R2 to Local
+
+```bash
+rclone sync r2:your-bucket-name ./microfeed-media
+```
+
+#### Automated R2 Backup Script
+
+```bash
+#!/bin/bash
+# backup-r2.sh
+
+DATE=$(date +%Y%m%d)
+BACKUP_DIR="$HOME/microfeed-backups/media-$DATE"
+BUCKET="your-bucket-name"
+ACCOUNT_ID="your-account-id"
+
+mkdir -p "$BACKUP_DIR"
+
+aws s3 sync "s3://$BUCKET" "$BACKUP_DIR" \
+  --endpoint-url "https://$ACCOUNT_ID.r2.cloudflarestorage.com" \
+  --profile r2
+
+echo "R2 backup completed: $BACKUP_DIR"
+```
+
+### Scripted Backup Example
+
+Here's a Python script to backup R2 files:
+
+```python
+import boto3
+import os
+from datetime import datetime
+
+# Configuration
+R2_ACCESS_KEY = os.environ['R2_ACCESS_KEY_ID']
+R2_SECRET_KEY = os.environ['R2_SECRET_ACCESS_KEY']
+ACCOUNT_ID = os.environ['CLOUDFLARE_ACCOUNT_ID']
+BUCKET_NAME = 'your-bucket-name'
+BACKUP_DIR = f'./microfeed-media-{datetime.now().strftime("%Y%m%d")}'
+
+# Create S3 client for R2
+s3 = boto3.client(
+    's3',
+    endpoint_url=f'https://{ACCOUNT_ID}.r2.cloudflarestorage.com',
+    aws_access_key_id=R2_ACCESS_KEY,
+    aws_secret_access_key=R2_SECRET_KEY
+)
+
+# Create backup directory
+os.makedirs(BACKUP_DIR, exist_ok=True)
+
+# List and download all objects
+paginator = s3.get_paginator('list_objects_v2')
+pages = paginator.paginate(Bucket=BUCKET_NAME)
+
+for page in pages:
+    if 'Contents' in page:
+        for obj in page['Contents']:
+            key = obj['Key']
+            local_path = os.path.join(BACKUP_DIR, key)
+            
+            # Create directories if needed
+            os.makedirs(os.path.dirname(local_path), exist_ok=True)
+            
+            # Download file
+            print(f'Downloading {key}...')
+            s3.download_file(BUCKET_NAME, key, local_path)
+
+print(f'Backup completed: {BACKUP_DIR}')
+```
+
+Run it:
+
+```bash
+python backup-r2.py
+```
+
+## Restoring from Backup
+
+### Restore D1 Database
+
+To restore a D1 database from a backup:
+
+```bash
+wrangler d1 execute FEED_DB --file=microfeed-backup-20260301.sql
+```
+
+**Warning**: This will overwrite existing data. Make sure you want to restore before running.
+
+### Restore Specific Records
+
+If you only need to restore specific items, edit the SQL file to keep only the relevant INSERT statements, then run:
+
+```bash
+wrangler d1 execute FEED_DB --file=partial-restore.sql
+```
+
+### Restore R2 Files
+
+To restore media files back to R2:
+
+```bash
+aws s3 sync ./microfeed-media s3://your-bucket-name \
+  --endpoint-url https://[account-id].r2.cloudflarestorage.com \
+  --profile r2
+```
+
+Or with rclone:
+
+```bash
+rclone sync ./microfeed-media r2:your-bucket-name
+```
+
+## Backup Best Practices
+
+### Frequency
+
+- **Daily backups** for active sites
+- **Weekly backups** for infrequently updated sites
+- **Before major changes** (always backup before updates)
+
+### Storage Locations
+
+Store backups in multiple locations:
+
+1. **Local machine** - Fast access, but vulnerable to hardware failure
+2. **External drive** - Offline backup protection
+3. **Cloud storage** - AWS S3, Google Cloud Storage, Dropbox, etc.
+4. **Version control** - Git for database schema (not full data)
+
+### Retention Policy
+
+Keep backups for:
+- Daily backups: 7 days
+- Weekly backups: 4 weeks
+- Monthly backups: 12 months
+- Yearly backups: Indefinitely
+
+### Testing Restores
+
+Regularly test your backups:
+
+1. Restore to a test environment
+2. Verify data integrity
+3. Check that media files load correctly
+4. Confirm feed generation works
+
+Test at least once per quarter.
+
+## Migration to Another Platform
+
+If you need to migrate away from Cloudflare:
+
+1. **Export D1 database** - You'll have a standard SQLite database
+2. **Download R2 files** - S3-compatible tools work with any platform
+3. **Convert data** - Write scripts to transform data for your new platform
+4. **Import to new system** - Most CMSs support SQL imports
+
+The SQLite format and S3 compatibility make microfeed data portable.
+
+## Support
+
+If you encounter issues with backups:
+
+- Check [Cloudflare D1 documentation](https://developers.cloudflare.com/d1/)
+- Check [Cloudflare R2 documentation](https://developers.cloudflare.com/r2/)
+- Review [Wrangler commands](https://developers.cloudflare.com/workers/wrangler/commands/)
+- Email support@microfeed.org

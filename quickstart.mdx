@@ -1,80 +1,225 @@
 ---
 title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+description: "Get your microfeed instance up and running on Cloudflare in minutes"
 ---
 
-## Get started in three steps
+## Overview
 
-Get your documentation site running locally and make your first customization.
+This guide will walk you through setting up your own microfeed instance on Cloudflare. The entire process takes about 15-20 minutes and requires no server management experience.
 
-### Step 1: Set up your local environment
+<Note>
+  microfeed uses GitHub Actions to deploy your code to Cloudflare. You'll fork the repository, add some configuration secrets, and let automation handle the rest.
+</Note>
+
+## Prerequisites
+
+Before you begin, make sure you have:
+
+<Steps>
+  <Step title="Cloudflare account">
+    [Sign up for free at Cloudflare.com](https://dash.cloudflare.com/sign-up) if you don't have an account yet.
+  </Step>
+  <Step title="GitHub account">
+    [Sign up for free at GitHub.com](https://github.com/signup) to fork the microfeed repository.
+  </Step>
+</Steps>
+
+## Installation steps
+
+### Step 1: Fork the repository
+
+<Steps>
+  <Step title="Fork to your account">
+    Navigate to [github.com/microfeed/microfeed/fork](https://github.com/microfeed/microfeed/fork) and fork the repository to your personal or organizational GitHub account.
+  </Step>
+  <Step title="Keep it synced">
+    You likely won't need to modify the code, but you'll want to keep your fork synced to receive future updates and bug fixes.
+  </Step>
+</Steps>
+
+### Step 2: Configure GitHub secrets
+
+You'll need to add five secrets to your forked repository. These allow GitHub Actions to deploy your microfeed instance to Cloudflare.
+
+Navigate to **Settings > Secrets and variables > Actions** in your forked repository.
 
 <AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
+  <Accordion title="CLOUDFLARE_ACCOUNT_ID">
+    Your Cloudflare account ID is visible in your dashboard URL.
+
+    1. [Log in to your Cloudflare account](https://dash.cloudflare.com/login)
+    2. Look at the URL: `https://dash.cloudflare.com/[your-account-id]`
+    3. Copy the account ID from the URL
+    4. Add it as a secret named **CLOUDFLARE_ACCOUNT_ID**
+
+    Example: If your URL is `https://dash.cloudflare.com/fff88980eeeeedcc3ffffd4f555f4999`, your account ID is `fff88980eeeeedcc3ffffd4f555f4999`.
   </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
+
+  <Accordion title="CLOUDFLARE_API_TOKEN">
+    Create an API token with permissions for Cloudflare Pages and D1.
+
+    1. Go to [dash.cloudflare.com/profile/api-tokens](https://dash.cloudflare.com/profile/api-tokens)
+    2. Click **Create Token** and select **Create Custom Token**
+    3. Add these permissions:
+       - **Cloudflare Pages**: Edit
+       - **D1**: Edit
+    4. Click **Continue to summary**, then **Create Token**
+    5. Copy the token and add it as a secret named **CLOUDFLARE_API_TOKEN**
+
+    <Warning>
+      Save this token immediately - you won't be able to view it again after leaving the page.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY">
+    Create R2 API credentials for media file storage.
+
+    1. Go to your [R2 dashboard](https://dash.cloudflare.com/sign-up/r2)
+    2. You may need to add a credit card, but you won't be charged unless you exceed the generous free tier (10GB storage + 10M reads/month + 1M writes/month)
+    3. Click **Manage R2 API Tokens** and then **Create API Token**
+    4. Select **Admin Read & Write** permission
+    5. Click **Create API Token**
+    6. Copy the **Access Key ID** and add it as **R2_ACCESS_KEY_ID**
+    7. Copy the **Secret Access Key** and add it as **R2_SECRET_ACCESS_KEY**
+
+    <Warning>
+      Save both values immediately - the secret key cannot be retrieved later.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="CLOUDFLARE_PROJECT_NAME">
+    Choose a project name that will identify your microfeed instance.
+
+    **Naming rules:**
+    - Use only letters (a-z, A-Z), numbers (0-9), and hyphens (-)
+    - No underscores, spaces, or special characters
+    - We recommend using your intended domain name with dots replaced by hyphens
+
+    **Example:** If you plan to use `photos.mycustomdomain.com`, set the project name to `photos-mycustomdomain-com`
+
+    Add this as a secret named **CLOUDFLARE_PROJECT_NAME**.
   </Accordion>
 </AccordionGroup>
 
-### Step 2: Deploy your changes
+<Info>
+  After adding all five secrets, your Actions secrets page should show: CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, CLOUDFLARE_PROJECT_NAME, R2_ACCESS_KEY_ID, and R2_SECRET_ACCESS_KEY.
+</Info>
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+### Step 3: Deploy to Cloudflare
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+Now that your secrets are configured, deploy your microfeed instance using GitHub Actions.
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+<Steps>
+  <Step title="Navigate to Actions">
+    In your forked repository, click the **Actions** tab.
+  </Step>
+  <Step title="Run the deployment workflow">
+    1. Click on **Deploy to Cloudflare Pages** in the left sidebar
+    2. Click the **Run workflow** button
+    3. Select the **main** branch
+    4. Click **Run workflow**
+  </Step>
+  <Step title="Wait for deployment">
+    The workflow will take a few minutes to complete. Watch for the green checkmark indicating successful deployment.
+  </Step>
+</Steps>
 
-### Step 3: Go live
+<Note>
+  Once deployed, you can access your site at `https://[CLOUDFLARE_PROJECT_NAME].pages.dev`
+</Note>
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+### Step 4: Complete Cloudflare setup
+
+The first time you visit your admin dashboard, you'll complete a setup checklist.
+
+<Steps>
+  <Step title="Access the admin dashboard">
+    Navigate to `https://[CLOUDFLARE_PROJECT_NAME].pages.dev/admin`
+  </Step>
+  <Step title="Configure Zero Trust authentication">
+    Follow the on-screen instructions to set up Cloudflare Zero Trust for secure admin access. This protects your admin dashboard from unauthorized access.
+  </Step>
+  <Step title="Create your R2 bucket">
+    The setup wizard will guide you through creating an R2 bucket for media file storage.
+  </Step>
+  <Step title="Optional: Add custom domain">
+    If you want to use your own domain instead of `*.pages.dev`, follow the prompts to configure a custom domain in Cloudflare.
+  </Step>
+</Steps>
+
+### Step 5: Start publishing
+
+Your microfeed instance is now ready to use!
+
+<CardGroup cols={2}>
+  <Card title="Add content" icon="plus">
+    Use the admin dashboard to add your first item - audio, video, photo, blog post, or link.
+  </Card>
+  <Card title="Customize appearance" icon="palette">
+    Navigate to **Settings > Custom code** to edit the HTML and CSS templates.
+  </Card>
+  <Card title="View your feeds" icon="rss">
+    Access your content at:
+    - Web: `https://[your-domain]/`
+    - RSS: `https://[your-domain]/rss/`
+    - JSON: `https://[your-domain]/json/`
+  </Card>
+  <Card title="Configure settings" icon="gear">
+    Explore settings for tracking URLs, custom domains, and more.
+  </Card>
+</CardGroup>
+
+## Customizing your site
+
+Your microfeed instance uses [mustache.js](https://github.com/janl/mustache.js) templating, giving you access to all your feed and item data.
+
+```html
+<!-- Example: Access feed data in your template -->
+<h1>{{title}}</h1>
+<p>{{description}}</p>
+
+{{#items}}
+  <article>
+    <h2>{{title}}</h2>
+    <div>{{{content_html}}}</div>
+  </article>
+{{/items}}
+```
+
+<Info>
+  Feed templates have access to variables from `/json/`, and item templates have access to variables from `/i/[item-id]/json`.
+</Info>
+
+## Updating microfeed
+
+When new features and bug fixes are released, you can update your instance easily.
+
+<Steps>
+  <Step title="Sync your fork">
+    On your forked repository's main page, click **Sync fork** to pull the latest changes from the upstream repository.
+  </Step>
+  <Step title="Deploy the update">
+    Go to **Actions > Deploy to Cloudflare Pages** and run the workflow again.
+  </Step>
+</Steps>
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Admin dashboard" icon="gauge" href="/features/admin-dashboard">
+    Learn all the features of the admin interface.
+  </Card>
+  <Card title="Custom theming" icon="paintbrush" href="/features/custom-theming">
+    Deep dive into customizing your site's HTML and CSS.
+  </Card>
+  <Card title="Media management" icon="photo-film" href="/features/media-management">
+    Understand how to upload and manage media files.
+  </Card>
+  <Card title="Local development" icon="laptop-code" href="/advanced/local-development">
+    Set up a local development environment.
+  </Card>
 </CardGroup>
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  Need help? Email us at [support@microfeed.org](mailto:support@microfeed.org) or [open an issue on GitHub](https://github.com/microfeed/microfeed/issues).
 </Note>

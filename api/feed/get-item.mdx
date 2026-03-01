@@ -1,0 +1,301 @@
+---
+title: 'Get Item'
+description: 'Fetch JSON feed data for a specific item'
+---
+
+## Overview
+
+The `/i/{id}/json` endpoint returns JSON Feed data for a single item. This is a public, read-only endpoint that doesn't require authentication.
+
+<Info>
+  The response follows the [JSON Feed 1.1 specification](https://www.jsonfeed.org/version/1.1/), with the `items` array containing only the requested item.
+</Info>
+
+## Endpoint
+
+```
+GET /i/{id}/json
+```
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The unique identifier of the item to fetch.
+  
+  **Example:** `GOwipulXxh9`
+</ParamField>
+
+## Response
+
+Returns a JSON Feed object with channel metadata and a single item in the `items` array.
+
+<ResponseField name="version" type="string" required>
+  The JSON Feed version URL. Always `https://jsonfeed.org/version/1.1`
+</ResponseField>
+
+<ResponseField name="title" type="string" required>
+  The channel name
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Channel description in HTML format
+</ResponseField>
+
+<ResponseField name="home_page_url" type="string">
+  The channel's website URL
+</ResponseField>
+
+<ResponseField name="feed_url" type="string">
+  The URL of the main JSON feed
+</ResponseField>
+
+<ResponseField name="icon" type="string">
+  Channel cover image URL
+</ResponseField>
+
+<ResponseField name="favicon" type="string">
+  Favicon URL for the site
+</ResponseField>
+
+<ResponseField name="language" type="string">
+  Primary language code in RFC 5646 format (e.g., `en-us`)
+</ResponseField>
+
+<ResponseField name="items" type="array">
+  Array containing a single item object. See the Item Structure section below.
+</ResponseField>
+
+<ResponseField name="_microfeed" type="object">
+  Microfeed-specific metadata (pagination fields are not included for single item responses)
+</ResponseField>
+
+### Item Structure
+
+<ResponseField name="id" type="string" required>
+  Unique item identifier
+</ResponseField>
+
+<ResponseField name="title" type="string" required>
+  Item title (e.g., podcast episode title or blog post title)
+</ResponseField>
+
+<ResponseField name="content_html" type="string">
+  Item description in HTML format. For podcast episodes, recommended to keep under 4000 characters for Apple Podcasts compatibility.
+</ResponseField>
+
+<ResponseField name="content_text" type="string">
+  Plain text version of the description
+</ResponseField>
+
+<ResponseField name="url" type="string">
+  Web page URL for this item on your microfeed site
+</ResponseField>
+
+<ResponseField name="external_url" type="string">
+  External URL if the attachment is an external link
+</ResponseField>
+
+<ResponseField name="date_published" type="string">
+  Publication date in RFC 3339 format (e.g., `2023-01-03T00:35:14.994Z`)
+</ResponseField>
+
+<ResponseField name="date_modified" type="string">
+  Last modification date in RFC 3339 format
+</ResponseField>
+
+<ResponseField name="image" type="string">
+  Square image specific to this item. For podcast episodes, must be 1400x1400 to 3000x3000 pixels (JPEG or PNG, 72 dpi, RGB colorspace)
+</ResponseField>
+
+<ResponseField name="banner_image" type="string">
+  Banner image URL (only when attachment is an image)
+</ResponseField>
+
+<ResponseField name="language" type="string">
+  Item-specific language code (if different from channel default)
+</ResponseField>
+
+<ResponseField name="attachments" type="array">
+  Array of media attachments. Although this is an array, microfeed supports up to 1 attachment per item.
+  
+  Each attachment object contains:
+  - `url` - Media file URL or external URL
+  - `mime_type` - Content type (e.g., `audio/mpeg`, `video/mp4`, `image/jpeg`)
+  - `size_in_bytes` - File size (not present for external URLs)
+  - `duration_in_seconds` - Duration for audio/video files
+</ResponseField>
+
+<ResponseField name="_microfeed" type="object">
+  Item-specific metadata including:
+  
+  **Status and Type:**
+  - `status` - Publication status: `published`, `unlisted`, or `unpublished`
+  - `is_audio` - Boolean indicating if attachment is audio
+  - `is_video` - Boolean indicating if attachment is video
+  - `is_image` - Boolean indicating if attachment is an image
+  - `is_document` - Boolean indicating if attachment is a document
+  - `is_external_url` - Boolean indicating if attachment is an external URL
+  
+  **URLs:**
+  - `web_url` - Web page URL for this item
+  - `json_url` - This endpoint's URL
+  - `rss_url` - RSS version of this item
+  
+  **Metadata:**
+  - `guid` - Unique identifier used by feed readers
+  - `date_published_short` - Human-friendly date format
+  - `date_published_ms` - Unix timestamp in milliseconds
+  - `duration_hhmmss` - Duration in HH:MM:SS format (for audio/video)
+  
+  **iTunes/Podcast Fields:**
+  - `itunes:title` - Episode title for Apple Podcasts
+  - `itunes:block` - Hide from Apple Podcasts if `true`
+  - `itunes:episodeType` - Episode type: `full`, `trailer`, or `bonus`
+  - `itunes:season` - Season number (integer)
+  - `itunes:episode` - Episode number (integer)
+  - `itunes:explicit` - Explicit content flag
+</ResponseField>
+
+## Examples
+
+### Basic Request
+
+```bash
+curl https://your-microfeed.com/i/GOwipulXxh9/json
+```
+
+### Response Example - Podcast Episode
+
+```json
+{
+  "version": "https://jsonfeed.org/version/1.1",
+  "title": "Tech Talk Daily",
+  "description": "<p>Daily discussions about technology</p>",
+  "home_page_url": "https://your-microfeed.com",
+  "feed_url": "https://your-microfeed.com/json",
+  "icon": "https://media-cdn.your-microfeed.com/images/channel-abc123.png",
+  "language": "en-us",
+  "items": [
+    {
+      "id": "GOwipulXxh9",
+      "title": "The Future of AI Development",
+      "content_html": "<p>In this episode, we explore the latest trends in AI development and what they mean for developers.</p>",
+      "content_text": "In this episode, we explore the latest trends in AI development and what they mean for developers.",
+      "url": "https://your-microfeed.com/i/future-of-ai-GOwipulXxh9/",
+      "date_published": "2023-01-03T00:35:14.994Z",
+      "image": "https://media-cdn.your-microfeed.com/images/item-def456.png",
+      "attachments": [
+        {
+          "url": "https://media-cdn.your-microfeed.com/media/audio-xyz789.mp3",
+          "mime_type": "audio/mpeg",
+          "size_in_bytes": 45678901,
+          "duration_in_seconds": 3245
+        }
+      ],
+      "_microfeed": {
+        "status": "published",
+        "is_audio": true,
+        "is_video": false,
+        "is_image": false,
+        "is_document": false,
+        "is_external_url": false,
+        "web_url": "https://your-microfeed.com/i/future-of-ai-GOwipulXxh9/",
+        "json_url": "https://your-microfeed.com/i/GOwipulXxh9/json",
+        "rss_url": "https://your-microfeed.com/i/GOwipulXxh9/rss",
+        "guid": "GOwipulXxh9",
+        "date_published_short": "Tue Jan 03 2023",
+        "date_published_ms": 1672707314994,
+        "duration_hhmmss": "00:54:05",
+        "itunes:episodeType": "full",
+        "itunes:season": 2,
+        "itunes:episode": 15,
+        "itunes:explicit": false
+      }
+    }
+  ],
+  "_microfeed": {
+    "microfeed_version": "0.1.0",
+    "base_url": "https://your-microfeed.com",
+    "items_sort_order": "newest_first"
+  }
+}
+```
+
+### Response Example - Blog Post with External Link
+
+```json
+{
+  "version": "https://jsonfeed.org/version/1.1",
+  "title": "My Link Blog",
+  "description": "<p>Curated links to interesting articles</p>",
+  "home_page_url": "https://your-microfeed.com",
+  "feed_url": "https://your-microfeed.com/json",
+  "language": "en-us",
+  "items": [
+    {
+      "id": "AbC123XyZ",
+      "title": "Interesting Article About Cloudflare Workers",
+      "content_html": "<p>This article provides great insights into serverless computing.</p>",
+      "content_text": "This article provides great insights into serverless computing.",
+      "url": "https://your-microfeed.com/i/cloudflare-article-AbC123XyZ/",
+      "external_url": "https://example.com/article-about-workers",
+      "date_published": "2023-02-15T10:20:30.000Z",
+      "attachments": [
+        {
+          "url": "https://example.com/article-about-workers",
+          "mime_type": "text/html"
+        }
+      ],
+      "_microfeed": {
+        "status": "published",
+        "is_audio": false,
+        "is_video": false,
+        "is_image": false,
+        "is_document": false,
+        "is_external_url": true,
+        "web_url": "https://your-microfeed.com/i/cloudflare-article-AbC123XyZ/",
+        "json_url": "https://your-microfeed.com/i/AbC123XyZ/json",
+        "guid": "AbC123XyZ",
+        "date_published_ms": 1676455230000
+      }
+    }
+  ],
+  "_microfeed": {
+    "microfeed_version": "0.1.0",
+    "base_url": "https://your-microfeed.com"
+  }
+}
+```
+
+## Error Responses
+
+### 404 Not Found
+
+Returned when:
+- The item with the specified ID doesn't exist
+- The item exists but has `unpublished` status
+- The JSON feed is disabled in admin settings at `/admin/settings/`
+
+```bash
+Not Found
+```
+
+## Use Cases
+
+- **Direct Item Links**: Share individual items via feed readers
+- **Item Previews**: Generate previews for social media or embeds
+- **Selective Sync**: Sync specific items to external platforms
+- **Feed Reader Support**: Compatible with JSON Feed readers
+- **Content Distribution**: Distribute individual pieces of content
+
+## Notes
+
+- Items with `unlisted` status are accessible via this endpoint but don't appear in the main feed
+- Items with `unpublished` status return a 404 error
+- The response includes full channel metadata, not just the item data
+- This endpoint can be disabled in admin settings along with the main JSON feed
+
+## Related Endpoints
+
+- [Get Feed](/api/feed/get-feed) - Fetch the full feed with pagination
+- [Get Item (Admin API)](/api/admin/items) - Authenticated version that returns unpublished items

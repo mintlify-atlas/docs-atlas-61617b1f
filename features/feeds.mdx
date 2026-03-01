@@ -1,0 +1,406 @@
+---
+title: Feed Generation
+description: Automatically generate RSS, JSON, and web feeds from your content
+---
+
+microfeed automatically generates three types of feeds from your content: a web feed (HTML), an RSS feed (XML), and a JSON feed. All three feeds stay in sync and update instantly when you publish new content.
+
+## Feed Types Overview
+
+<CardGroup cols={3}>
+  <Card title="Web Feed" icon="globe">
+    Human-readable HTML website for browsers
+  </Card>
+  <Card title="RSS Feed" icon="rss">
+    XML feed for podcast apps and RSS readers
+  </Card>
+  <Card title="JSON Feed" icon="code">
+    Structured JSON for headless CMS applications
+  </Card>
+</CardGroup>
+
+## Web Feed
+
+Your web feed is the main public-facing website, accessible at your custom domain or `your-project.pages.dev`.
+
+### Default Structure
+
+```html
+<main>
+  <section>
+    <h1>{{title}}</h1>
+    <div class="flex">
+      {{#icon}}
+      <div class="mr-4">
+        <a href="{{icon}}" target="_blank">
+          <img alt="{{title}}" src="{{icon}}" class="img-lg" loading="lazy"/>
+        </a>
+      </div>
+      {{/icon}}
+      <div>
+        {{#authors}}
+        <div class="one-line">
+          <span title="{{name}}">{{name}}</span>
+        </div>
+        {{/authors}}
+      </div>
+    </div>
+  </section>
+
+  {{#items}}
+  <div class="mb-4">
+    <a href="{{_microfeed.web_url}}" class="mb-1">
+      {{title}}
+      <span class="icon-arrow-right"></span>
+    </a>
+    <div class="text-sm">
+      {{_microfeed.date_published_short}}
+      {{#_microfeed.duration_hhmmss}}
+      &middot; <i>{{_microfeed.duration_hhmmss}}</i>
+      {{/_microfeed.duration_hhmmss}}
+    </div>
+  </div>
+  {{/items}}
+</main>
+```
+
+From `edge-src/common/default_themes/web_feed.html`
+
+### Features
+
+- Responsive design that works on all devices
+- Subscribe buttons for podcast platforms
+- Pagination with next/previous links
+- SEO-optimized individual item pages
+- Customizable with Mustache templates
+
+<Info>
+The web feed is fully customizable. See [Custom Theming](/features/custom-theming) for details.
+</Info>
+
+## RSS Feed
+
+The RSS feed is automatically generated and available at `/rss/` (e.g., `https://your-site.com/rss/`).
+
+### RSS Generation
+
+The RSS feed is built by `FeedPublicRssBuilder.js`:
+
+```javascript
+_buildItemsRss() {
+  const items = [];
+  this.jsonData.items.forEach((item) => {
+    const _microfeed = item._microfeed || {};
+    const itemJson = {
+      'title': item.title || 'untitled',
+      'guid': item.id,
+      'pubDate': msToUtcString(item._microfeed.date_published_ms),
+      'itunes:explicit': _microfeed['itunes:explicit'] ? 'true' : 'false',
+    };
+    
+    if (item['content_html']) {
+      itemJson['description'] = {
+        '@cdata': item['content_html'],
+      };
+    }
+
+    if (item['url']) {
+      itemJson['link'] = item['url'];
+    }
+
+    // Add enclosure for media files
+    const {attachments} = item;
+    let mediaFile;
+    if (attachments && attachments[0]) {
+      mediaFile = attachments[0];
+    }
+    if (mediaFile && mediaFile.url) {
+      itemJson.enclosure = {
+        '@_url': mediaFile.url,
+        '@_type': mediaFile.mime_type,
+        '@_length': mediaFile.size_in_byte,
+      };
+      if (mediaFile.duration_in_seconds) {
+        itemJson['itunes:duration'] = secondsToHHMMSS(mediaFile.duration_in_seconds);
+      }
+    }
+    items.push(itemJson);
+  });
+  return items;
+}
+```
+
+From `edge-src/models/FeedPublicRssBuilder.js:12-83`
+
+### iTunes Podcast Compatibility
+
+The RSS feed includes full iTunes podcast namespace support:
+
+- `itunes:type` - Episodic or serial
+- `itunes:explicit` - Explicit content flag
+- `itunes:category` - Podcast categories
+- `itunes:owner` - Owner email and name
+- `itunes:image` - Podcast artwork
+- `itunes:season` - Season number (per episode)
+- `itunes:episode` - Episode number (per episode)
+- `itunes:episodeType` - Full, trailer, or bonus
+- `itunes:duration` - Episode duration
+- `itunes:block` - Block from iTunes
+- `itunes:complete` - Mark podcast as complete
+
+### RSS XML Structure
+
+```xml
+<?xml version='1.0' encoding='UTF-8'?>
+<?xml-stylesheet href="/rss/stylesheet" type="text/xsl"?>
+<rss xmlns:itunes='http://www.itunes.com/dtds/podcast-1.0.dtd' 
+     xmlns:atom='http://www.w3.org/2005/Atom' 
+     version='2.0'>
+  <channel>
+    <title>Your Feed Title</title>
+    <language>en</language>
+    <generator>microfeed.org</generator>
+    <itunes:type>episodic</itunes:type>
+    <itunes:explicit>false</itunes:explicit>
+    <atom:link rel="self" href="https://your-site.com/rss/" type="application/rss+xml"/>
+    <description><![CDATA[Your feed description]]></description>
+    <itunes:image href="https://your-site.com/cover.jpg"/>
+    
+    <item>
+      <title>Episode Title</title>
+      <guid>uhbQEmArlC2</guid>
+      <pubDate>Mon, 01 Jan 2024 12:00:00 GMT</pubDate>
+      <itunes:explicit>false</itunes:explicit>
+      <description><![CDATA[Episode description]]></description>
+      <link>https://your-site.com/i/episode-title-uhbQEmArlC2/</link>
+      <enclosure url="https://media.your-site.com/audio.mp3" 
+                 type="audio/mpeg" 
+                 length="24567890"/>
+      <itunes:duration>00:30:20</itunes:duration>
+      <itunes:season>1</itunes:season>
+      <itunes:episode>1</itunes:episode>
+      <itunes:episodeType>full</itunes:episodeType>
+    </item>
+  </channel>
+</rss>
+```
+
+### Pagination
+
+The RSS feed supports pagination with `next_cursor` and `prev_cursor` parameters:
+
+```xml
+<link rel="next" 
+      href="https://your-site.com/rss/?next_cursor=abc123&sort=newest_first" 
+      type="application/rss+xml"/>
+```
+
+## JSON Feed
+
+The JSON feed follows the [JSON Feed Version 1.1](https://jsonfeed.org/) specification and is available at `/json/`.
+
+### JSON Feed Structure
+
+```javascript
+{
+  "version": "https://jsonfeed.org/version/1.1",
+  "title": "Your Feed Title",
+  "home_page_url": "https://your-site.com",
+  "feed_url": "https://your-site.com/json/",
+  "description": "Your feed description",
+  "icon": "https://media.your-site.com/cover.jpg",
+  "favicon": "https://media.your-site.com/favicon.ico",
+  "authors": [{
+    "name": "Publisher Name"
+  }],
+  "language": "en",
+  "items": [{
+    "id": "uhbQEmArlC2",
+    "title": "Episode Title",
+    "content_html": "<p>Episode description</p>",
+    "content_text": "Episode description",
+    "url": "https://your-site.com/i/episode-title-uhbQEmArlC2/",
+    "image": "https://media.your-site.com/cover.jpg",
+    "date_published": "2024-01-01T12:00:00Z",
+    "date_modified": "2024-01-01T12:00:00Z",
+    "attachments": [{
+      "url": "https://media.your-site.com/audio.mp3",
+      "mime_type": "audio/mpeg",
+      "size_in_byte": 24567890,
+      "duration_in_seconds": 1820
+    }],
+    "_microfeed": {
+      "is_audio": true,
+      "is_document": false,
+      "is_external_url": false,
+      "is_video": false,
+      "is_image": false,
+      "web_url": "https://your-site.com/i/episode-title-uhbQEmArlC2/",
+      "json_url": "https://your-site.com/i/uhbQEmArlC2/json",
+      "rss_url": "https://your-site.com/i/uhbQEmArlC2/rss",
+      "guid": "uhbQEmArlC2",
+      "status": "published",
+      "duration_hhmmss": "00:30:20",
+      "date_published_short": "Jan 1, 2024",
+      "date_published_ms": 1704110400000,
+      "itunes:season": 1,
+      "itunes:episode": 1,
+      "itunes:episodeType": "full",
+      "itunes:explicit": false
+    }
+  }],
+  "_microfeed": {
+    "microfeed_version": "0.1.0",
+    "base_url": "https://your-site.com",
+    "subscribe_methods": [...],
+    "categories": [...],
+    "items_sort_order": "newest_first",
+    "items_next_cursor": "xyz789",
+    "next_url": "https://your-site.com/json/?next_cursor=xyz789&sort=newest_first"
+  }
+}
+```
+
+### JSON Feed Builder
+
+The JSON feed is generated by `FeedPublicJsonBuilder.js`:
+
+```javascript
+_buildPublicContentItem(item, mediaFile) {
+  const newItem = {
+    id: item.id,
+    title: item.title || 'untitled',
+  };
+  
+  const attachment = {};
+  const _microfeed = {
+    is_audio: mediaFile.isAudio,
+    is_document: mediaFile.isDocument,
+    is_external_url: mediaFile.isExternalUrl,
+    is_video: mediaFile.isVideo,
+    is_image: mediaFile.isImage,
+    web_url: item.webUrl,
+    json_url: item.jsonUrl,
+    rss_url: item.rssUrl,
+    guid: item.guid,
+    status: ITEM_STATUSES_DICT[item.status].name,
+  };
+
+  if (isValidMediaFile(mediaFile)) {
+    if (mediaFile.url) {
+      attachment['url'] = buildAudioUrlWithTracking(mediaFile.url, trackingUrls);
+    }
+    if (mediaFile.contentType) {
+      attachment['mime_type'] = mediaFile.contentType;
+    }
+    if (mediaFile.sizeByte) {
+      attachment['size_in_byte'] = mediaFile.sizeByte;
+    }
+    if (mediaFile.durationSecond) {
+      attachment['duration_in_seconds'] = mediaFile.durationSecond;
+      _microfeed['duration_hhmmss'] = secondsToHHMMSS(mediaFile.durationSecond);
+    }
+  }
+
+  newItem['_microfeed'] = _microfeed;
+  return newItem;
+}
+```
+
+From `edge-src/models/FeedPublicJsonBuilder.js:186-281`
+
+### Headless CMS Usage
+
+The JSON feed can be used as a headless CMS API:
+
+<Tabs>
+  <Tab title="Fetch Feed Data">
+    ```javascript
+    // Fetch feed data
+    const response = await fetch('https://your-site.com/json/');
+    const feed = await response.json();
+
+    // Access items
+    feed.items.forEach(item => {
+      console.log(item.title);
+      console.log(item._microfeed.web_url);
+      if (item._microfeed.is_audio) {
+        console.log('Audio duration:', item._microfeed.duration_hhmmss);
+      }
+    });
+    ```
+  </Tab>
+  <Tab title="Pagination">
+    ```javascript
+    // Fetch first page
+    let url = 'https://your-site.com/json/';
+    const response = await fetch(url);
+    const feed = await response.json();
+
+    // Check for next page
+    if (feed._microfeed.next_url) {
+      const nextResponse = await fetch(feed._microfeed.next_url);
+      const nextPage = await nextResponse.json();
+    }
+    ```
+  </Tab>
+  <Tab title="Individual Items">
+    ```javascript
+    // Fetch individual item
+    const itemResponse = await fetch('https://your-site.com/i/uhbQEmArlC2/json');
+    const item = await itemResponse.json();
+
+    console.log(item.items[0].title);
+    console.log(item.items[0].attachments[0].url);
+    ```
+  </Tab>
+</Tabs>
+
+## OpenAPI Specification
+
+microfeed provides an OpenAPI specification for the JSON feed API:
+
+- **YAML:** `https://your-site.com/json/openapi.yaml`
+- **HTML:** `https://your-site.com/json/openapi.html`
+
+<Info>
+The OpenAPI spec documents all available fields, query parameters, and response formats.
+</Info>
+
+## Feed Query Parameters
+
+All feed types support these query parameters:
+
+| Parameter | Description | Example |
+|-----------|-------------|----------|
+| `next_cursor` | Pagination cursor for next page | `?next_cursor=abc123` |
+| `prev_cursor` | Pagination cursor for previous page | `?prev_cursor=xyz789` |
+| `sort` | Sort order: `newest_first` or `oldest_first` | `?sort=oldest_first` |
+
+## Real-World Examples
+
+<CardGroup cols={2}>
+  <Card title="Web Feed" href="https://llamacorn.listennotes.com/">
+    llamacorn.listennotes.com
+  </Card>
+  <Card title="RSS Feed" href="https://llamacorn.listennotes.com/rss/">
+    llamacorn.listennotes.com/rss/
+  </Card>
+  <Card title="JSON Feed" href="https://llamacorn.listennotes.com/json/">
+    llamacorn.listennotes.com/json/
+  </Card>
+  <Card title="OpenAPI Spec" href="https://www.microfeed.org/json/openapi.html">
+    microfeed.org/json/openapi.html
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Custom Theming" href="/features/custom-theming">
+    Customize your web feed appearance
+  </Card>
+  <Card title="Content Types" href="/features/content-types">
+    Learn about different content types
+  </Card>
+</CardGroup>

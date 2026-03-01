@@ -1,0 +1,154 @@
+---
+title: Updating microfeed
+description: Keep your installation up to date with the latest features
+---
+
+The microfeed team continuously adds new features and fixes bugs in the main repository. You can easily update your forked installation to get these improvements.
+
+## Why update
+
+Updating your microfeed instance gives you:
+
+- New features and functionality
+- Security patches and bug fixes
+- Performance improvements
+- Compatibility with the latest Cloudflare services
+
+## Update process
+
+Updating microfeed is a two-step process: sync your fork with the main repository, then deploy the new code.
+
+### Step 1: Sync your fork
+
+<Steps>
+  <Step title="Navigate to your repository">
+    Go to your forked microfeed repository on GitHub.
+  </Step>
+
+  <Step title="Check for updates">
+    If the main repository has new commits, you'll see a message like:
+    ```
+    This branch is X commits behind microfeed:main
+    ```
+  </Step>
+
+  <Step title="Sync the fork">
+    Click the "Sync fork" button, then click "Update branch" to pull in the latest changes.
+
+    ![Sync fork](https://user-images.githubusercontent.com/1719237/209483973-c82e7808-0d21-4aad-ac2d-c4e80da691bc.png)
+  </Step>
+
+  <Step title="Verify the sync">
+    After syncing, the message should change to:
+    ```
+    This branch is up to date with microfeed:main
+    ```
+  </Step>
+</Steps>
+
+### Step 2: Deploy the updates
+
+<Steps>
+  <Step title="Navigate to Actions">
+    In your forked repository, go to **Actions → Deploy to Cloudflare Pages**.
+  </Step>
+
+  <Step title="Run the workflow">
+    Click "Run workflow" and select your deployment environment (usually "production").
+  </Step>
+
+  <Step title="Monitor deployment">
+    Wait for the workflow to complete. This redeploys your microfeed instance with the updated code.
+  </Step>
+
+  <Step title="Verify the update">
+    Visit your site to confirm it's still working correctly with the new version.
+  </Step>
+</Steps>
+
+<Info>
+Your existing data (feed items, media files, and settings) is preserved during updates. Only the application code is replaced.
+</Info>
+
+## Update frequency
+
+How often should you update?
+
+- **Security updates**: Apply as soon as possible
+- **Major features**: Update when you want to use new functionality
+- **Minor updates**: Update monthly or quarterly
+
+<Note>
+Check the [microfeed releases page](https://github.com/microfeed/microfeed/releases) to see what's new in each version.
+</Note>
+
+## Handling conflicts
+
+If you've modified the code in your fork, you might encounter merge conflicts when syncing.
+
+### Resolve conflicts
+
+<Steps>
+  <Step title="Review conflicts">
+    GitHub will show you which files have conflicts that need manual resolution.
+  </Step>
+
+  <Step title="Resolve in GitHub">
+    You can resolve simple conflicts directly in the GitHub web interface.
+  </Step>
+
+  <Step title="Resolve locally">
+    For complex conflicts:
+    1. Clone your repository locally
+    2. Merge the upstream changes
+    3. Resolve conflicts in your editor
+    4. Commit and push the resolution
+  </Step>
+</Steps>
+
+<Warning>
+If you haven't modified any code, you won't encounter conflicts. Most users never need to customize the code.
+</Warning>
+
+## Rollback if needed
+
+If an update causes issues:
+
+<Steps>
+  <Step title="Find previous commit">
+    Go to your repository's commit history and find the last working version.
+  </Step>
+
+  <Step title="Revert changes">
+    Create a new commit that reverts to the previous version.
+  </Step>
+
+  <Step title="Redeploy">
+    Run the GitHub Actions workflow to deploy the reverted version.
+  </Step>
+
+  <Step title="Report the issue">
+    Open an issue in the main microfeed repository to help the team fix the problem.
+  </Step>
+</Steps>
+
+## Automated updates
+
+You can use GitHub's Dependabot or similar tools to automatically notify you of updates, but you'll still need to manually:
+
+1. Review the changes
+2. Sync your fork
+3. Run the deployment workflow
+
+<Info>
+Automatic deployment of updates is not recommended without testing, as updates could introduce breaking changes to your customizations.
+</Info>
+
+## Stay informed
+
+To know when updates are available:
+
+- Watch the [microfeed repository](https://github.com/microfeed/microfeed) on GitHub
+- Check the releases page periodically
+- Join the microfeed community discussions
+- Subscribe to the project's RSS feed if available
