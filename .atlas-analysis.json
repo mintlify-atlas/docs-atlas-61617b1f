@@ -1,0 +1,115 @@
+{
+  "projectType": "saas",
+  "projectName": "microfeed",
+  "projectDescription": "A lightweight CMS self-hosted on Cloudflare for podcasts, blogs, photos, videos, documents, and curated URLs.",
+  "theme": "palm",
+  "primaryColor": "#6366f1",
+  "lightColor": "#818cf8",
+  "darkColor": "#4f46e5",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Installation",
+            "pages": [
+              "installation/prerequisites",
+              "installation/fork-repository",
+              "installation/configure-secrets",
+              "installation/deploy-to-cloudflare",
+              "installation/cloudflare-setup",
+              "installation/updating"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/content-types",
+              "features/admin-dashboard",
+              "features/feeds",
+              "features/custom-theming",
+              "features/media-management"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/settings",
+              "configuration/custom-code",
+              "configuration/tracking-urls",
+              "configuration/custom-domains"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/architecture",
+              "advanced/database-schema",
+              "advanced/local-development",
+              "advanced/backup-and-restore"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api/introduction",
+              "api/authentication"
+            ]
+          },
+          {
+            "group": "Feed API",
+            "pages": [
+              "api/feed/get-feed",
+              "api/feed/get-item"
+            ]
+          },
+          {
+            "group": "Admin API",
+            "pages": [
+              "api/admin/channels",
+              "api/admin/items",
+              "api/admin/media-files"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Multi-format content publishing (podcasts, blogs, photos, videos, documents, URLs)",
+    "Web, RSS, and JSON feed generation",
+    "Admin dashboard with visual editor",
+    "Custom HTML/CSS theming with Mustache templating",
+    "Media file hosting with Cloudflare R2",
+    "Cloudflare D1 database for metadata",
+    "Public JSON API with OpenAPI spec",
+    "Admin API for programmatic content management",
+    "Cloudflare Zero Trust authentication",
+    "Serverless architecture on Cloudflare Pages"
+  ],
+  "publicApiSurface": [
+    "GET /json - Fetch feed JSON",
+    "GET /i/{id}/json - Fetch item JSON",
+    "GET /rss - Fetch RSS feed",
+    "PUT /api/channels/primary/ - Update channel metadata",
+    "POST /api/items/ - Create new item",
+    "PUT /api/items/{id} - Update existing item",
+    "DELETE /api/items/{id} - Delete item",
+    "POST /api/media_files/ - Upload media file",
+    "GET /admin - Admin dashboard",
+    "GET /admin/settings - Settings management"
+  ]
+}
