@@ -91,6 +91,7 @@
           {
             "group": "Admin API",
             "pages": [
+              "api/admin/feed",
               "api/admin/channels",
               "api/admin/items",
               "api/admin/media-files"

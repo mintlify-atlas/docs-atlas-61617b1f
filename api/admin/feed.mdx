@@ -1,0 +1,181 @@
+---
+title: 'Feed API (Admin)'
+description: 'Fetch feed data using authentication - the admin version of GET /json'
+---
+
+<Warning>
+  This endpoint requires authentication using your API key. You can find your API key in the API section of your microfeed settings at `/admin/settings/`.
+</Warning>
+
+## Get Feed
+
+### `GET /api/feed/`
+
+Fetch JSON feed data for your entire feed. This endpoint returns the same data as `GET /json` but requires authentication and cannot be disabled via settings.
+
+This is useful when you need to:
+- Access your feed programmatically even when public access is disabled
+- Fetch unpublished or unlisted items in your scripts
+- Build admin tools that need guaranteed access to feed data
+
+#### Authentication
+
+<ParamField header="X-MicrofeedAPI-Key" type="string" required>
+  Your microfeed instance's API key. Find it at `/admin/settings/` in the API section.
+</ParamField>
+
+#### Query Parameters
+
+<ParamField query="next_cursor" type="integer">
+  Offset for pagination. Use the `next_cursor` value from a previous response to fetch the next page of items.
+  
+  Example: `1672707197212`
+</ParamField>
+
+<ParamField query="sort" type="string" default="newest_first">
+  Sort order for items.
+  
+  Options:
+  - `newest_first` - Most recent items first (default)
+  - `oldest_first` - Oldest items first
+</ParamField>
+
+#### Response
+
+Returns a JSON Feed object containing:
+- Channel metadata (title, description, icon, etc.)
+- Array of items with full metadata
+- Pagination information in the `_microfeed` field
+
+See the [JSON Feed specification](https://www.jsonfeed.org/version/1.1/) for full schema details.
+
+<ResponseField name="version" type="string">
+  JSON Feed version URL (always "https://jsonfeed.org/version/1.1")
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  Channel title
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Channel description
+</ResponseField>
+
+<ResponseField name="home_page_url" type="string">
+  Channel homepage URL
+</ResponseField>
+
+<ResponseField name="feed_url" type="string">
+  JSON feed URL
+</ResponseField>
+
+<ResponseField name="items" type="array">
+  Array of item objects. Each item includes title, content, attachments, and metadata.
+</ResponseField>
+
+<ResponseField name="_microfeed" type="object">
+  microfeed-specific metadata including pagination cursors and item counts.
+  
+  <ResponseField name="_microfeed.items_next_cursor" type="integer">
+    Cursor for the next page of items. Use this value in the `next_cursor` query parameter.
+  </ResponseField>
+  
+  <ResponseField name="_microfeed.items_sort_order" type="string">
+    Current sort order applied to items.
+  </ResponseField>
+</ResponseField>
+
+#### Example Request
+
+```bash
+curl -X GET https://your-instance.microfeed.org/api/feed/ \
+  -H "X-MicrofeedAPI-Key: your-api-key-here"
+```
+
+#### Example Request with Pagination
+
+```bash
+curl -X GET "https://your-instance.microfeed.org/api/feed/?next_cursor=1672707197212&sort=oldest_first" \
+  -H "X-MicrofeedAPI-Key: your-api-key-here"
+```
+
+#### Example Response
+
+```json
+{
+  "version": "https://jsonfeed.org/version/1.1",
+  "title": "My Podcast",
+  "description": "A podcast about technology and design",
+  "home_page_url": "https://example.com",
+  "feed_url": "https://example.com/json",
+  "icon": "https://example.com/icon.jpg",
+  "items": [
+    {
+      "id": "GOwipulXxh9",
+      "title": "Episode 1: Introduction",
+      "content_html": "<p>Welcome to our first episode!</p>",
+      "url": "https://example.com/i/episode-1-GOwipulXxh9/",
+      "date_published": "2023-01-03T00:35:14.994Z",
+      "image": "https://example.com/episode-1.jpg",
+      "attachments": [
+        {
+          "url": "https://example.com/episode-1.mp3",
+          "mime_type": "audio/mpeg",
+          "size_in_bytes": 24986239,
+          "duration_in_seconds": 1866
+        }
+      ],
+      "_microfeed": {
+        "itunes:episode": 1,
+        "itunes:episodeType": "full",
+        "itunes:explicit": false
+      }
+    }
+  ],
+  "_microfeed": {
+    "items_total": 42,
+    "items_per_page": 20,
+    "items_next_cursor": 1672620000000,
+    "items_sort_order": "newest_first"
+  }
+}
+```
+
+#### Error Responses
+
+<ResponseField name="401 Unauthorized" type="error">
+  Invalid or missing API key.
+  
+  ```json
+  {
+    "error": "Unauthorized"
+  }
+  ```
+</ResponseField>
+
+## Comparison with Public Feed API
+
+| Feature | `GET /json` (Public) | `GET /api/feed/` (Admin) |
+|---------|---------------------|-------------------------|
+| Authentication | None required | API key required |
+| Can be disabled | Yes, via settings | No |
+| Access to unpublished items | No | Depends on implementation |
+| Use case | Public consumption | Admin/automation |
+
+## Use Cases
+
+- **Automated backups**: Fetch all feed data regularly for backup purposes
+- **Content migration**: Export content to other platforms
+- **Admin dashboards**: Build custom admin interfaces that need feed data
+- **Testing**: Test feed generation without public exposure
+
+## Related Endpoints
+
+<CardGroup cols={2}>
+  <Card title="Public Feed API" icon="rss" href="/api/feed/get-feed">
+    Public version without authentication
+  </Card>
+  <Card title="Get Item (Admin)" icon="file" href="/api/admin/items">
+    Fetch individual items with authentication
+  </Card>
+</CardGroup>
